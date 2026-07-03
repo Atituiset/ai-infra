@@ -24,6 +24,7 @@
 | **架构师/TL** | Part 0 → Part 2 (精读) → Part 3 + Part 4 (速览) |
 | **面试备战** | Part 5 (自检) → 按缺口回溯 Part 1-4 |
 | **源码贡献** | 直接跳到 Part 3 或 Part 4 的"源码阅读路线" |
+| **边缘 AI 工程师 / 平头哥生态** | Part 15 → Part 16 → Part 17（重点 §16.4 MNN） |
 
 ### 按问题速查
 
@@ -47,6 +48,12 @@
 | GPU / CUDA 基础 | Part 7 |
 | Benchmark / 部署 / 运维 | Part 8 |
 | 术语速查 | Part 9 |
+| 边缘 AI 硬件怎么选？ | Part 15 §15.5 |
+| TensorRT-LLM 在 Jetson 上怎么用？ | Part 16 §16.2 |
+| llama.cpp 量化/GGUF 原理？ | Part 16 §16.3 |
+| 边缘 KV Cache 怎么省？ | Part 17 §17.1 |
+| VLM/VLA 怎么部署到边缘？ | Part 17 §17.5 |
+| 平头哥玄铁/MNN 生态？ | Part 16 §16.4 + Part 12 |
 
 ---
 
@@ -164,6 +171,31 @@
 - 隐私保护与水印
 - 国内/国际合规要求
 
+### [Part 15: 边缘 AI 硬件地图与约束](part-15-edge-hardware.md)
+- 边缘 AI 定义与边界
+- 国际主流边缘平台（Jetson / Qualcomm / Apple / Intel / AMD）
+- 国产边缘芯片（平头哥玄铁、昇腾 310、寒武纪、地平线、黑芝麻、RK3588）
+- 硬件约束对软件设计的影响
+- 边缘芯片选型矩阵
+
+### [Part 16: 边缘推理框架与软件栈](part-16-edge-frameworks.md)
+- 边缘框架全景与分类
+- TensorRT / TensorRT-LLM 源码级分析（含 Jetson）
+- llama.cpp 源码级分析（GGUF / 量化 / KV Cache / 多后端）
+- MNN（平头哥/阿里生态）
+- ONNX Runtime GenAI / OpenVINO / QNN / RKNN / MLC-LLM / ExecuTorch overview
+- 框架选型决策树
+
+### [Part 17: 边缘场景优化与落地](part-17-edge-optimization.md)
+- 内存受限下的 KV Cache 管理
+- 量化与校准实战
+- 模型轻量化（蒸馏 / 剪枝 / TinyLLM）
+- 异构调度与多模型部署
+- VLM / VLA 边缘部署
+- Inflight Batching 在边缘
+- 问题排查与客户支持流程
+- 边缘上线 checklist
+
 ---
 
 ## 约定
@@ -178,5 +210,5 @@
 ## 维护
 
 - 最后更新：2026-07-02
-- 基于源码版本：vLLM V1 引擎开发主线、SGLang 最新主线
+- 基于源码版本：vLLM V1 引擎开发主线、SGLang 最新主线、TensorRT-LLM 主线、llama.cpp 主线
 - Profile 岗位参考：`profile.md` — 训推平台及引擎研发主任工程师
