@@ -199,7 +199,61 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.7 横向对比矩阵
+## 10.7 边缘侧推理引擎 ★
+
+边缘推理与云侧推理的约束差异巨大：内存以 MB/GB 计、功耗受限、工具链与芯片 BSP 强耦合、算子支持决定模型能否落地。本节把主流边缘框架按绑定关系分类，并给出与云侧引擎的选型边界。详细源码级分析见 **Part 16**。
+
+### 边缘框架分类
+
+| 类别 | 代表框架 | 硬件绑定 | 开放程度 | 典型场景 |
+|------|---------|---------|---------|---------|
+| **NVIDIA 锁定生态** | TensorRT、TensorRT-LLM | NVIDIA GPU / Jetson / DLA | 半开放（runtime 闭源） | 机器人、工业视觉、高端边缘盒子 |
+| **跨平台通用框架** | llama.cpp、ONNX Runtime GenAI、OpenVINO、MNN | CPU / GPU / 部分 NPU | 开源 | 手机、PC、AIoT、快速原型 |
+| **芯片厂商专用 SDK** | Qualcomm QNN、Rockchip RKNN / RKNN-LLM | 各自 NPU | 私有工具链为主 | 手机、车载、低成本摄像头、国产替代 |
+
+### 边缘引擎选型矩阵
+
+| 框架 | 主要硬件 | 量化支持 | 多模型并发 | 易用性 | 最佳场景 |
+|------|---------|---------|-----------|--------|---------|
+| **TensorRT / TensorRT-LLM (Jetson)** | NVIDIA GPU / Jetson / DLA | FP8/FP16/INT8/INT4/W4A16 | 中（显存决定） | 中 | 高端边缘、延迟敏感、机器人 |
+| **ONNX Runtime GenAI** | CPU / GPU / NPU（EP 扩展） | INT8/FP16/INT4 | 中 | 高 | 跨平台 LLM、Windows Copilot+ PC |
+| **llama.cpp** | CPU / CUDA / Metal / Vulkan / OpenCL / 国产后端 | GGML 量化（Q4/Q5/Q8/IQ） | 低-中 | 高 | 端侧 LLM、快速部署、嵌入式 |
+| **MNN** | ARM / x86 / RISC-V / NPU / GPU | INT8/FP16/混合精度 | 中 | 中 | AIoT、平头哥玄铁、移动端 |
+| **RKNN / RKNN-LLM** | Rockchip NPU | INT8/FP16 / W8A8 | 低 | 中 | 低成本边缘盒子、摄像头、工控 |
+| **Qualcomm QNN** | Hexagon NPU / Snapdragon | INT8/FP16 | 中 | 中 | 手机、车载、XR、低功耗 LLM |
+| **OpenVINO / OpenVINO GenAI** | Intel CPU / GPU / NPU | INT8/FP16/NNCF | 中 | 高 | Intel AIPC、工业质检、边缘服务器 |
+
+### 主流框架一句话定位
+
+**TensorRT / TensorRT-LLM on Jetson**：NVIDIA 官方闭源方案，把 HuggingFace 模型编译成 TensorRT engine，在 Jetson Orin/Thor 上延迟最低；代价是编译流程重、版本与 CUDA/Drive 强耦合、新模型适配慢。适合预算充足、已锁定 NVIDIA 的高端边缘场景。
+
+**ONNX Runtime GenAI**：微软推出的跨平台 LLM runtime，基于 ONNX Runtime 的 Execution Provider 机制，可在 DirectML/CUDA/CPU 甚至 Qualcomm NPU 上运行；模型需先导出为 ONNX GenAI 格式，适合需要一份模型跑多平台的 Windows/边缘场景。
+
+**llama.cpp**：社区最活跃的端侧 LLM 推理框架，纯 C/C++ 实现，支持 GGUF 格式和极丰富的量化方案（Q4_K_M、IQ4_XS 等）。部署简单到一条命令，是 PC、树莓派、嵌入式设备跑 7B/13B 模型的首选原型工具。
+
+**MNN**：阿里开源的轻量推理引擎，针对 ARM/RISC-V/NPU 做了大量图优化和内存优化，在 AIoT 和移动端 CV/NLP 任务中成熟稳定；LLM 支持通过 MNN-LLM 扩展，社区以中文为主。
+
+**RKNN / RKNN-LLM**：瑞芯微为其 NPU 提供的私有工具链，将 ONNX/PyTorch 模型转换为 RKNN 格式。RKNN-LLM 针对大模型做了 W8A8/INT8 适配，典型落地是 RV1126/RK3588 等低成本盒子，工具链版本与芯片 BSP 强绑定。
+
+**Qualcomm QNN**：高通 Hexagon NPU 的推理 SDK，面向手机、车载、XR 设备。模型需转换为 DLC 格式，HMX/HVX 指令集优化可带来极高能效比；缺点是生态封闭、调试工具链重、不同 Snapdragon 平台兼容性差异大。
+
+**OpenVINO / OpenVINO GenAI**：Intel 官方推理工具包，OpenVINO GenAI 是面向 LLM 的高阶 API。在 Intel CPU/iGPU/NPU（Meteor Lake/Arrow Lake）上优化到位，NNCF 量化工具链成熟；适合 AIPC 和已有 Intel 边缘服务器的场景。
+
+### 云侧引擎 vs 边缘引擎
+
+| 维度 | 云侧（vLLM / SGLang / TRT-LLM datacenter） | 边缘（本节框架） |
+|------|------------------------------------------|----------------|
+| **目标硬件** | 多卡 GPU / 高功耗服务器 | 单卡/无卡 / 低功耗设备 |
+| **优化目标** | 高吞吐、Continuous Batching、PD 分离 | 低延迟单 batch、低功耗、静态形状 |
+| **模型格式** | HuggingFace / Safetensors / engine | TensorRT engine / RKNN / QNN DLC / GGUF / OV IR |
+| **部署形态** | 服务化 API、容器、K8s | SDK + 模型 + 本地运行时 |
+| **选择时机** | 有稳定网络、算力充足、需要服务多用户 | 离线、隐私敏感、网络/功耗/成本受限 |
+
+**关键原则**：边缘选型的第一约束不是性能，而是**目标平台是否支持、模型能否跑通、工具链是否成熟**。一个能在目标 NPU 上跑通的私有 SDK，往往比一个开源但算子缺失的框架更有工程价值。
+
+---
+
+## 10.8 横向对比矩阵
 
 | 维度 | vLLM | SGLang | TensorRT-LLM | TGI | LMDeploy |
 |------|------|--------|--------------|-----|----------|
@@ -216,7 +270,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.8 选型决策树
+## 10.9 选型决策树
 
 ```
 开始
@@ -242,7 +296,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.9 生产组合建议
+## 10.10 生产组合建议
 
 | 场景 | 推荐引擎 | 理由 |
 |------|---------|------|
@@ -255,7 +309,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.10 迁移成本
+## 10.11 迁移成本
 
 | 迁移方向 | 成本 | 主要工作 |
 |----------|------|---------|
