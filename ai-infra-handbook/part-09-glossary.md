@@ -36,6 +36,7 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **Decode** | - | 自回归生成阶段（每次 1 token） | Part 1 §1.1.2 |
+| **DLA** | Deep Learning Accelerator | 专用深度学习加速器，常与 GPU 共享内存 | Part 15 §15.2.1 |
 | **DP** | Data Parallelism | 数据并行 | Part 2 §2.2.4 |
 | **DP Attention** | Data Parallel Attention | vLLM 针对 MLA 的按请求分区 attention | Part 6 Finding 1-2 |
 | **dFlash** | - | SGLang 的 in-filling 投机解码 | Part 2 §2.6.3, Part 4 §4.6.3 |
@@ -45,6 +46,7 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **Eagle** | - | 投机解码算法，用轻量 draft model | Part 2 §2.6.2, Part 3 §3.5, Part 4 §4.6 |
+| **Edge TPU** | - | Google 推出的低功耗 AI 加速器，主要用于 TFLite/LiteRT 生态 | Part 16 §16.5.3 |
 | **EP** | Expert Parallelism | 专家并行（MoE 专用） | Part 2 §2.2.3 |
 
 ## F
@@ -59,6 +61,7 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
+| **GGUF** | Georgi Gerganov Universal Format | llama.cpp 使用的二进制模型格式，支持按张量选择量化类型 | Part 16 §16.3.2 |
 | **Goodput** | - | 有效吞吐（成功请求的吞吐） | Part 1 §1.2 |
 | **GPTQ** | - | 基于 Hessian 的权重量化 | Part 1 §1.5.2 |
 | **GQA** | Grouped Query Attention | 分组查询注意力 | Part 1 §1.1.4 |
@@ -68,9 +71,23 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
+| **H2O** | Heavy-Hitter Oracle | 通过保留 heavy-hitter token 和最近窗口压缩 KV Cache | Part 17 §17.1.3 |
 | **HBM** | High Bandwidth Memory | 高带宽显存 | Part 1 §1.4, Part 7 §7.1 |
 | **HiCache** | - | SGLang 三级缓存架构 | Part 2 §2.3.4, Part 4 §4.5.3, Part 6 Finding 7 |
 | **HiRadixTree** | - | HiCache 的跨三级页表结构 | Part 6 Finding 7 |
+| **HTP** | Hexagon Tensor Processor | Qualcomm Hexagon NPU 上的张量处理单元，QNN 常用后端 | Part 16 §16.5.3 |
+
+## I
+
+| 术语 | 英文全称 | 含义 | 所在 Part |
+|------|---------|------|----------|
+| **In-flight Batching** | - | 在单条序列生成过程中动态拼接新请求的批处理策略 | Part 16 §16.2.4 |
+
+## J
+
+| 术语 | 英文全称 | 含义 | 所在 Part |
+|------|---------|------|----------|
+| **Jetson** | - | NVIDIA 边缘 AI 计算平台系列（Orin Nano/NX/AGX/Thor） | Part 15 §15.2.1 |
 
 ## K
 
@@ -78,6 +95,7 @@
 |------|---------|------|----------|
 | **KV Cache** | Key-Value Cache | Transformer 推理中存储历史 K/V 的缓存 | Part 1 §1.1.3 |
 | **KV Cache Manager** | - | vLLM 中管理 block 分配的组件 | Part 3 §3.3 |
+| **KV Cache Quantization** | - | 对 KV Cache 做 INT8/INT4 等低精度量化以节省内存 | Part 17 §17.1.4 |
 | **KV Connector** | - | vLLM V1 中用于 PD 分离的 KV 传输连接器 | Part 3 §3.2.4 |
 
 ## L
@@ -85,6 +103,7 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **LLM** | Large Language Model | 大语言模型 | 全书 |
+| **LPDDR** | Low-Power Double Data Rate | 低功耗双倍数据速率内存，边缘设备常用共享内存类型 | Part 15 §15.1.2 |
 | **LRU** | Least Recently Used | 最近最少使用驱逐策略 | Part 4 §4.2.4 |
 
 ## M
@@ -92,6 +111,7 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **MLA** | Multi-head Latent Attention | DeepSeek 的压缩 KV attention | Part 2 §2.4.3, Part 6 Finding 1 |
+| **MNN** | - | 阿里巴巴开源的轻量级端侧推理框架 | Part 16 §16.4 |
 | **MoE** | Mixture of Experts | 混合专家模型 | Part 2 §2.2.3 |
 | **MTP** | Multi-Token Prediction | 多 token 预测（投机解码） | Part 2 §2.6.3, Part 6 Finding 4 |
 | **Memory Wall** | - | 内存带宽成为性能瓶颈 | Part 1 §1.4.2 |
@@ -100,6 +120,7 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
+| **NPU** | Neural Processing Unit | 神经网络处理单元，边缘设备常见 AI 加速器 | Part 15 §15.2.2, Part 17 §17.4 |
 | **NVLink** | - | NVIDIA 高速卡间互联 | Part 1 §1.4, Part 7 §7.1 |
 
 ## O
@@ -123,6 +144,7 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
+| **QNN** | Qualcomm Neural Network | Qualcomm 神经网络 SDK，面向 Hexagon NPU / HTP | Part 15 §15.2.2, Part 16 §16.5.3 |
 | **QPS** | Queries Per Second | 每秒查询数 | Part 1 §1.2 |
 | **Quantization** | - | 量化 | Part 1 §1.5, Part 2 §2.7 |
 
@@ -132,6 +154,7 @@
 |------|---------|------|----------|
 | **RadixAttention** | - | SGLang 的前缀树式 KV Cache | Part 2 §2.1.2, Part 4 §4.2 |
 | **RDMA** | Remote Direct Memory Access | 远程直接内存访问 | Part 2 §2.3.3 |
+| **RKNN** | - | 瑞芯微为其 NPU 提供的模型转换与运行时工具链 | Part 15 §15.3.2, Part 16 §16.5.4 |
 | **RoPE** | Rotary Position Embedding | 旋转位置编码 | Part 2 §2.5.1 |
 
 ## S
@@ -140,10 +163,12 @@
 |------|---------|------|----------|
 | **Scheduler** | - | 推理引擎调度器 | Part 2 §2.1 |
 | **SGLang** | - | 高性能结构化 LLM 编程/推理框架 | 全书 |
+| **Shared Memory** | - / 共享内存 | CPU、GPU/NPU 共用同一颗 LPDDR 的内存架构 | Part 15 §15.1.2 |
 | **SM** | Streaming Multiprocessor | NVIDIA GPU 流式多处理器 | Part 7 §7.1 |
 | **SP** | Sequence Parallelism | 序列并行 | Part 2 §2.2.4 |
 | **Speculative Decoding** | - | 投机解码 | Part 1 §1.6.2, Part 2 §2.6 |
 | **Static Batching** | - | 静态批处理 | Part 1 §1.3.1 |
+| **StreamingLLM** | - | 通过保留 sink token 和最近窗口实现超长序列推理 | Part 17 §17.1.3 |
 | **Swapping** | - | 将 KV Cache 换出到 CPU | Part 2 §2.1.1 |
 
 ## T
@@ -167,8 +192,15 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
-| **Wide-EP** | - | vLLM 的 DP+EP 混合并行架构 | Part 6 Finding 2 |
 | **Warp** | - | 32 个 thread 的 SIMD 执行单元 | Part 7 §7.2.2 |
+| **Wide-EP** | - | vLLM 的 DP+EP 混合并行架构 | Part 6 Finding 2 |
+| **Wujian** | 无剑 | 平头哥 SoC 平台，配套玄铁 RISC-V 处理器 | Part 15 §15.3.1 |
+
+## X
+
+| 术语 | 英文全称 | 含义 | 所在 Part |
+|------|---------|------|----------|
+| **XuanTie** | 玄铁 | 平头哥 RISC-V 处理器系列 | Part 15 §15.3.1 |
 
 ---
 
@@ -213,6 +245,11 @@
 
 ### 硬件基础
 - GPU / CUDA → Part 7
+
+### 边缘 AI
+- 边缘硬件 / Jetson / NPU / DLA / LPDDR / 共享内存 / 玄铁 / 无剑 → Part 15
+- 边缘框架 / GGUF / QNN / RKNN / MNN / Edge TPU / In-flight Batching → Part 16
+- 边缘优化 / StreamingLLM / H2O / KV Cache Quantization → Part 17
 
 ### 生产运维
 - 部署 / 监控 / 故障排查 → Part 8
