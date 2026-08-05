@@ -63,146 +63,24 @@
 
 ## 目录
 
-### [Part 0: AI Infra 全景图](part-00-overview.md)
-- AI Infra 分层架构
-- 训练 vs 推理的本质区别
-- 推理引擎生态对比（vLLM / SGLang / TRT-LLM / TGI / LMDeploy）
-- 部署形态演进：单卡 → TP → PP → PD 分离 → HiCache 集群
-- 重要论文索引
-
-### [Part 1: 入门篇 — 核心概念](part-01-fundamentals.md)
-- Transformer 推理基础：自回归、Prefill vs Decode、KV Cache、GQA/MQA
-- 性能指标：TTFT / TPOT / Throughput / Goodput
-- 批处理：Static Batching → Continuous Batching → Chunked Prefill
-- 内存与显存：HBM 层级、Memory Wall、KV Cache 显存计算
-- 量化基础：AWQ / GPTQ / SmoothQuant / FP8 / KV Cache 量化
-- 解码策略：Greedy / Sampling / Beam Search / 投机解码入门
-- ★ 标注面试高频知识点
-
-### [Part 2: 进阶篇 — 高性能推理架构](part-02-advanced.md)
-- Continuous Batching 深度：vLLM Scheduler vs SGLang Scheduler
-- Overlap 调度：SGLang 独有 CPU/GPU 并行
-- 并行策略：TP / PP / EP / DP / SP / CP，MoE 专家并行
-- PD Disaggregation：原理、SGLang 实现、Mooncake KV Transfer
-- HiCache 三级缓存：L1 GPU / L2 CPU / L3 分布式
-- Attention 优化：PagedAttention / FlashAttention / FlashInfer / MLA / 稀疏注意力（NSA / DSA）
-- 量化进阶：W4A16 vs W8A8 vs FP8 实战选型
-- 投机解码深度：Eagle / Medusa / MTP / dFlash
-
-### [Part 3: vLLM 源码解剖](part-03-vllm-source.md)
-- 架构总览：V1 Engine (EngineCore + Frontend)，数据流全景
-- Scheduler：请求队列、KV 分配、Preemption、KV Connector
-- PagedAttention / KVCacheManager：Block Pool、Prefix Caching、Hash Matching
-- Model Runner：GPUModelRunner、CUDA Graph、Attention Backend 选择
-- 投机解码：Eagle Proposer、验证流程、Scheduler 集成、DFlash / 动态投机 / Suffix Decoding
-- KV 卸载与分层：KV Cache Offload / Tiering、SimpleKVOffload
-- 量化支持：AWQ / GPTQ / FP8 配置与加载
-- 源码阅读路线图
-
-### [Part 4: SGLang 源码解剖](part-04-sglang-source.md)
-- 架构总览：与 vLLM 的关键差异、数据流全景
-- RadixAttention：Radix Tree 数据结构、前缀匹配、驱逐策略
-- Overlap 调度：CPU/GPU 并行实现、RelayPayload、结果处理
-- Model Runner：ScheduleBatch → ForwardBatch 转换
-- PD 分离：Prefill/Decode Bootstrap + Transfer 完整生命周期
-- Mooncake 传输后端：分层传输 + RDMA
-- HiCache 集成：跨节点分布式 KV Cache
-- 投机解码：Eagle v2 Worker、dFlash
-- Mem Cache 体系：Radix / SWA / Mamba / Hi / Session / Unified Cache
-- 最新特性速览：NSA/DSA、DeepSeek V4、D-LLM、Elastic EP / EPLB、KV Canary、Grammar
-- 源码阅读路线图
-
-### [Part 5: 面试实战与自检](part-05-interview.md)
-- 高频面试题（入门 5 题 + 进阶 5 题，含答题要点和参考章节）
-- 源码定位题（4 题，含具体代码路径）
-- 场景设计题（千卡 MoE 部署、低延迟优化、多租户调度）
-- 能力自检 Checklist（对标 Profile 岗位要求）
-- 必读论文/源码/关注人物
-
-### [Part 6: 补充 — Deep Research 研究报告](part-06-research-report.md)
-- 107-agent 多阶段对抗验证 → 7 条高置信度声明
-- **Finding 1**: MLA + TP 下 KV Cache 8× 重复 → DP Attention 方案
-- **Finding 2**: vLLM Wide-EP 架构（Attention DP + Expert EP）
-- **Finding 3**: DP+EP vs TP+EP 实测数据（MI300X，DeepSeek-R1）
-- **Finding 4**: MTP 投机解码生产环境衰减（+60.8% → +14.2%）
-- **Finding 5**: Megatron-LM TP 通信量公式
-- **Finding 6**: Mooncake RDMA 传输实测（87-190 GB/s）
-- **Finding 7**: SGLang HiCache HiRadixTree 三级页表架构
-- 16 条被否决声明 + 否决原因
-- 25 篇完整来源列表
-- **时效性更新（2026-08）**：V3.2/V4 稀疏注意力对 Finding 1/4 的影响
-
-### [Part 7: GPU 架构与 CUDA 编程基础](part-07-gpu-cuda-basics.md) 🆕
-- NVIDIA GPU 架构演进（Ampere / Hopper / Blackwell）
-- GPU 核心组件：SM、Tensor Core、HBM、NVLink
-- CUDA 基础：Kernel / Grid / Block / Thread / Warp
-- 推理性能调优 Checklist
-
-### [Part 8: 生产部署与运维](part-08-production.md) 🆕
-- Benchmark 方法（vLLM / SGLang 工具、负载模型、结果解读）
-- 关键部署参数
-- KV Cache Offload / Tiering 部署实操（vLLM / SGLang 参数与注意点）
-- 监控与可观测性
-- 常见故障排查（OOM / 高 TTFT / 高 TPOT / 输出错误）
-- 上线 checklist
-
-### [Part 9: 术语表与索引](part-09-glossary.md) 🆕
-- A-Z 术语表
-- 按主题归类索引
-
-### [Part 10: 推理引擎生态深度对比](part-10-engine-ecosystem.md) 🆕
-- vLLM / SGLang / TensorRT-LLM / TGI / LMDeploy 逐引擎分析
-- 横向对比矩阵（延迟/吞吐/易用性/生态/稳定性）
-- 选型决策树 + 迁移成本
-
-### [Part 11: 具体模型部署案例](part-11-model-case-studies.md) 🆕
-- DeepSeek-V3/R1 (MoE + MLA) + V3.2/V4 演进（DSA / CSA+HCA 稀疏注意力）
-- LLaMA-3-405B (Dense)
-- Qwen3-235B-A22B (MoE)
-- LLaMA-3.1-70B (中小规模)
-- 模型部署决策模板
-
-### [Part 12: 国产 GPU 与异构硬件适配](part-12-domestic-gpu.md) 🆕
-- 华为昇腾、摩尔线程、海光 DCU、AMD ROCm
-- 适配路径与关键参数
-- 跨硬件迁移 checklist
-
-### [Part 13: 成本模型与 ROI 分析](part-13-cost-roi.md) 🆕
-- $/1M tokens 计算模型
-- 硬件/电费/折旧/人力成本
-- 不同引擎 TCO 对比
-- ROI 决策框架与成本优化策略
-
-### [Part 14: 安全、对齐与合规](part-14-security-compliance.md) 🆕
-- 内容安全与过滤（输入/输出）
-- 提示注入防护
-- 隐私保护与水印
-- 国内/国际合规要求
-
-### [Part 15: 边缘 AI 硬件地图与约束](part-15-edge-hardware.md)
-- 边缘 AI 定义与边界
-- 国际主流边缘平台（Jetson / Qualcomm / Apple / Intel / AMD）
-- 国产边缘芯片（平头哥玄铁、昇腾 310、寒武纪、地平线、黑芝麻、RK3588）
-- 硬件约束对软件设计的影响
-- 边缘芯片选型矩阵
-
-### [Part 16: 边缘推理框架与软件栈](part-16-edge-frameworks.md)
-- 边缘框架全景与分类
-- TensorRT / TensorRT-LLM 源码级分析（含 Jetson）
-- llama.cpp 源码级分析（GGUF / 量化 / KV Cache / 多后端）
-- MNN（平头哥/阿里生态）
-- ONNX Runtime GenAI / OpenVINO / QNN / RKNN / MLC-LLM / ExecuTorch overview
-- 框架选型决策树
-
-### [Part 17: 边缘场景优化与落地](part-17-edge-optimization.md)
-- 内存受限下的 KV Cache 管理
-- 量化与校准实战
-- 模型轻量化（蒸馏 / 剪枝 / TinyLLM）
-- 异构调度与多模型部署
-- VLM / VLA 边缘部署
-- Inflight Batching 在边缘
-- 问题排查与客户支持流程
-- 边缘上线 checklist
+- [Part 0：AI Infra 全景图](part-00-overview.md)
+- [Part 1：入门篇 — AI Infra 核心概念](part-01-fundamentals.md)
+- [Part 2：进阶篇 — 高性能推理架构](part-02-advanced.md)
+- [Part 3：vLLM 源码深度解剖](part-03-vllm-source.md)
+- [Part 4：SGLang 源码深度解剖](part-04-sglang-source.md)
+- [Part 5：面试实战与自检清单](part-05-interview.md)
+- [Part 6：Deep Research 研究报告](part-06-research-report.md)
+- [Part 7：GPU 架构与 CUDA 编程基础](part-07-gpu-cuda-basics.md)
+- [Part 8：生产部署与运维](part-08-production.md)
+- [Part 9：术语表与索引](part-09-glossary.md)
+- [Part 10：推理引擎生态深度对比](part-10-engine-ecosystem.md)
+- [Part 11：具体模型部署案例](part-11-model-case-studies.md)
+- [Part 12：国产 GPU 与边缘芯片](part-12-domestic-gpu.md)
+- [Part 13：成本模型与 ROI 分析](part-13-cost-roi.md)
+- [Part 14：安全、对齐与合规](part-14-security-compliance.md)
+- [Part 15：边缘 AI 硬件地图与约束](part-15-edge-hardware.md)
+- [Part 16：边缘推理框架与软件栈](part-16-edge-frameworks.md)
+- [Part 17：边缘场景优化与落地](part-17-edge-optimization.md)
 
 ---
 
