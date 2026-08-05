@@ -37,11 +37,15 @@
 | TP / PP / EP 怎么切分？| Part 2 §2.2 |
 | PD 分离 + Mooncake + HiCache | Part 2 §2.3 |
 | PagedAttention / FlashAttention / MLA | Part 2 §2.4 |
+| 稀疏注意力 NSA / DSA 是什么？ | Part 2 §2.4.4 |
 | 投机解码 Eagle / MTP | Part 2 §2.6 |
 | vLLM Scheduler / KV Manager 源码 | Part 3 §3.2-3.3 |
 | vLLM Model Runner / Attention Backend | Part 3 §3.4 |
+| vLLM KV Offload / 最新特性 | Part 3 §3.7 |
 | SGLang RadixAttention 源码 | Part 4 §4.2 |
 | SGLang Overlap 调度 / PD 分离 | Part 4 §4.3, §4.5 |
+| SGLang 最新特性（D-LLM / EPLB / KV Canary）| Part 4 §4.10 |
+| DeepSeek V3.2 / V4 怎么部署？ | Part 11 §11.1.1 |
 | 面试高频问题 | Part 5 §5.1 |
 | 场景设计题（千卡/MoE/多租户）| Part 5 §5.3 |
 | 能力自检 Checklist | Part 5 §5.4 |
@@ -81,7 +85,7 @@
 - 并行策略：TP / PP / EP / DP / SP / CP，MoE 专家并行
 - PD Disaggregation：原理、SGLang 实现、Mooncake KV Transfer
 - HiCache 三级缓存：L1 GPU / L2 CPU / L3 分布式
-- Attention 优化：PagedAttention / FlashAttention / FlashInfer / MLA
+- Attention 优化：PagedAttention / FlashAttention / FlashInfer / MLA / 稀疏注意力（NSA / DSA）
 - 量化进阶：W4A16 vs W8A8 vs FP8 实战选型
 - 投机解码深度：Eagle / Medusa / MTP / dFlash
 
@@ -90,7 +94,8 @@
 - Scheduler：请求队列、KV 分配、Preemption、KV Connector
 - PagedAttention / KVCacheManager：Block Pool、Prefix Caching、Hash Matching
 - Model Runner：GPUModelRunner、CUDA Graph、Attention Backend 选择
-- 投机解码：Eagle Proposer、验证流程、Scheduler 集成
+- 投机解码：Eagle Proposer、验证流程、Scheduler 集成、DFlash / 动态投机 / Suffix Decoding
+- KV 卸载与分层：KV Cache Offload / Tiering、SimpleKVOffload
 - 量化支持：AWQ / GPTQ / FP8 配置与加载
 - 源码阅读路线图
 
@@ -104,6 +109,7 @@
 - HiCache 集成：跨节点分布式 KV Cache
 - 投机解码：Eagle v2 Worker、dFlash
 - Mem Cache 体系：Radix / SWA / Mamba / Hi / Session / Unified Cache
+- 最新特性速览：NSA/DSA、DeepSeek V4、D-LLM、Elastic EP / EPLB、KV Canary、Grammar
 - 源码阅读路线图
 
 ### [Part 5: 面试实战与自检](part-05-interview.md)
@@ -124,6 +130,7 @@
 - **Finding 7**: SGLang HiCache HiRadixTree 三级页表架构
 - 16 条被否决声明 + 否决原因
 - 25 篇完整来源列表
+- **时效性更新（2026-08）**：V3.2/V4 稀疏注意力对 Finding 1/4 的影响
 
 ### [Part 7: GPU 架构与 CUDA 编程基础](part-07-gpu-cuda-basics.md) 🆕
 - NVIDIA GPU 架构演进（Ampere / Hopper / Blackwell）
@@ -134,6 +141,7 @@
 ### [Part 8: 生产部署与运维](part-08-production.md) 🆕
 - Benchmark 方法（vLLM / SGLang 工具、负载模型、结果解读）
 - 关键部署参数
+- KV Cache Offload / Tiering 部署实操（vLLM / SGLang 参数与注意点）
 - 监控与可观测性
 - 常见故障排查（OOM / 高 TTFT / 高 TPOT / 输出错误）
 - 上线 checklist
@@ -148,7 +156,7 @@
 - 选型决策树 + 迁移成本
 
 ### [Part 11: 具体模型部署案例](part-11-model-case-studies.md) 🆕
-- DeepSeek-V3/R1 (MoE + MLA)
+- DeepSeek-V3/R1 (MoE + MLA) + V3.2/V4 演进（DSA / CSA+HCA 稀疏注意力）
 - LLaMA-3-405B (Dense)
 - Qwen3-235B-A22B (MoE)
 - LLaMA-3.1-70B (中小规模)
@@ -209,6 +217,30 @@
 
 ## 维护
 
-- 最后更新：2026-07-02
+- 最后更新：2026-07-03
 - 基于源码版本：vLLM V1 引擎开发主线、SGLang 最新主线、TensorRT-LLM 主线、llama.cpp 主线
 - Profile 岗位参考：`profile.md` — 训推平台及引擎研发主任工程师
+
+## 构建与部署（mdbook）
+
+本书使用 [mdBook](https://github.com/rust-lang/mdBook) 管理，结构如下：
+
+```
+docs/
+├── book.toml          # mdbook 配置
+├── src/               # 全部 Markdown 源文件
+│   ├── SUMMARY.md     # 目录（章节顺序）
+│   ├── README.md      # 首页
+│   └── part-*.md      # 各章节
+└── .github/workflows/ # GitHub Pages 自动部署
+```
+
+**本地构建预览**：
+
+```bash
+cd docs
+mdbook build          # 生成静态站点到 book/
+mdbook serve          # 本地预览 http://localhost:3000
+```
+
+**部署到 GitHub Pages**：推送到 GitHub 仓库的 `master` 分支后，`.github/workflows/deploy-mdbook.yml` 会自动构建并发布。首次使用需在仓库 Settings → Pages 中把 Source 设为 **GitHub Actions**，并将 `book.toml` 中的 `git-repository-url` / `edit-url-template` 改成实际仓库地址。
