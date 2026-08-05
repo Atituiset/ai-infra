@@ -72,7 +72,7 @@ Jetson 各代表 SKU 的典型规格如下：
 | **Jetson Orin Nano** | 5–15 W | 最高 40 TOPS | 4–8 GB 共享内存 | 入门级边缘盒子、教育、原型 |
 | **Jetson Orin NX** | 10–25 W | 最高 100 TOPS | 8–16 GB 共享内存 | 中等性能边缘设备 |
 | **Jetson AGX Orin** | 15–60 W | 最高 275 TOPS | 32–64 GB LPDDR5 | 高端边缘服务器、机器人 |
-| **Jetson Thor** | 目标 TBD | 目标 700–800 TOPS | 新一代统一内存 | 机器人、自动驾驶、下一代边缘 |
+| **Jetson Thor** | 40–130 W | 最高 2070 TOPS（FP4）/ 1035 TOPS（FP8） | 128 GB LPDDR5X | 人形机器人、自动驾驶、下一代边缘 |
 
 **关键特性**：
 
@@ -152,7 +152,7 @@ Apple 的 **Neural Engine（ANE）** 是集成在 A/M 系列芯片中的专用 N
 
 | 厂商 | 代表平台 | 峰值算力 | 软件栈 | 最佳场景 |
 |------|---------|---------|--------|---------|
-| **NVIDIA** | Jetson AGX Orin / Thor | 275–800 TOPS | CUDA / cuDNN / TensorRT | 机器人、高端边缘盒子 |
+| **NVIDIA** | Jetson AGX Orin / Thor | 275–2070 TOPS | CUDA / cuDNN / TensorRT | 机器人、高端边缘盒子 |
 | **Qualcomm** | Snapdragon 8 Gen 3 / Ride | 45 TOPS+ | QNN / SNPE / Android NN | 手机、车载、XR |
 | **Apple** | M4 / A18 Pro Neural Engine | 38 TOPS | Core ML / MLX | 移动端隐私计算 |
 | **Intel** | Core Ultra NPU | 11–48 TOPS | OpenVINO / IPEX | AIPC 轻量 AI |
@@ -398,7 +398,7 @@ Apple 的 **Neural Engine（ANE）** 是集成在 A/M 系列芯片中的专用 N
 |------------|-------------|------|------|--------|---------|
 | **Jetson Orin Nano** | 最高 40 TOPS | 4–8 GB 共享 | 5–15 W | CUDA / TensorRT | 入门级原型、教育 |
 | **Jetson AGX Orin** | 最高 275 TOPS | 32–64 GB LPDDR5 | 15–60 W | CUDA / TensorRT | 机器人、高端边缘盒子 |
-| **Jetson Thor** | 目标 700–800 TOPS | 新一代统一内存 | 待定 | CUDA / TensorRT | 机器人、自动驾驶 |
+| **Jetson Thor** | 1035 TOPS（FP8）/ 2070 TOPS（FP4） | 128 GB LPDDR5X | 40–130 W | CUDA / TensorRT | 人形机器人、自动驾驶 |
 | **Snapdragon 8 Gen 3** | 约 45 TOPS | LPDDR5X 共享 | 5–10 W（整机） | QNN / SNPE | 旗舰手机、XR |
 | **Apple M4 Neural Engine** | 38 TOPS | 统一内存 | 4–25 W | Core ML / MLX | Apple 生态本地 AI |
 | **Intel Core Ultra NPU** | 11–48 TOPS | DDR5 / LPDDR5X | 5–30 W | OpenVINO | AIPC 轻量任务 |

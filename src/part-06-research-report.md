@@ -293,3 +293,26 @@ Attention Layers:     Replicated across DP ranks
 | 23 | [LLM Inference Metrics](https://bentoml.com/llm/llm-inference-basics/llm-inference-metrics) | secondary | 指标 |
 | 24 | [vLLM vs SGLang Throughput](https://tensorfuse.io/blog/llm-throughput-vllm-vs-sglang) | blog | 对比 |
 | 25 | [Baidu AI Infra Article](https://developer.baidu.com/article/detail.html?id=6897592) | blog | 架构 |
+
+---
+
+## 6.6 时效性更新（2026-08）
+
+> 本报告基于 2026-07-02 的资料生成。以下条目针对 2026 年 7-8 月的新进展做增量修正，不影响原 Finding 的历史结论。
+
+**1. Finding 1（MLA TP 8× 重复）的适用范围**：
+- 结论对 DeepSeek-V3/V3.1 仍成立（MLA 单 KV head 架构未变）。
+- DeepSeek-V3.2-Exp 引入 DSA 后，KV 参与计算的方式变为 top-k 选择 + 压缩块，8× 重复的表述不再完全适用；V4 采用 CSA + HCA 混合注意力，KV Cache 布局进一步变化（详见 Part 11 §11.1.1）。
+- 工程含义：DP Attention / Wide-EP 仍是 V3 系列生产首选；V4 需要按新版引擎（SGLang `deepseek_v4_backend` / vLLM DSpark 支持）重新评估并行度。
+
+**2. Finding 4（MTP 大规模衰减）的后续**：
+- FastMTP（arXiv:2509.18362）已进入主流引擎；SGLang 主线另有 dFlash（in-filling 投机）、vLLM 支持 DFlash + 动态投机 + Suffix Decoding（Part 3 §3.7）。
+- 原结论"大规模下 MTP 收益衰减"未被推翻，但"衰减后仍有 +14.2%"这一量级在更新引擎 + 更优 draft 策略下有望改善，生产选型时应以本地 benchmark 为准。
+
+**3. 被否决声明中有两条需要重新审视**：
+- "4-bit 量化中小模型严重退化"：当时被否决；但 V3.2/V4 时代低比特 + 稀疏注意力的组合成为主流，小模型 INT4 部署质量高度依赖量化方法（AWQ/GPTQ/FP8 混合），原否决理由仍然成立，只是讨论语境已切换。
+- "HiCache 降低 TTFT 56-84%"：厂商营销数据的质疑不变；SGLang 主线新增 KV Canary（Part 4 §4.10），可用于独立复现 HiCache 类缓存命中率数据。
+
+**4. 开放问题更新**：
+- 新增研究方向：稀疏注意力（NSA/DSA）下如何与 Radix/Block Cache 协同（top-k 索引缓存、被跳过块的复用）；D-LLM（扩散式 LLM）的调度与投机解码；KV Offload/Tiering 的带宽-延迟权衡（Part 8 §8.2.3）。
+- 原问题 1（AllToAll/AllReduce 联合调度）在 Wide-EP + EPLB（Part 4 §4.10）落地后有了工程答案，但理论最优调度仍未闭合。

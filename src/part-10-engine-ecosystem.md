@@ -1,6 +1,7 @@
 # Part 10：推理引擎生态深度对比
 
-> **面向角色**：需要做技术选型的架构师、技术负责人  > **目标**：深入理解 vLLM、SGLang、TensorRT-LLM、TGI、LMDeploy 的差异与适用边界
+> **面向角色**：需要做技术选型的架构师、技术负责人  
+> **目标**：深入理解 vLLM、SGLang、TensorRT-LLM、TGI、LMDeploy 的差异与适用边界
 
 ---
 

@@ -195,6 +195,15 @@ Response Out (streaming / non-streaming)
 | Part 3 | vLLM 源码深度解剖 | 源码面试、二次开发 |
 | Part 4 | SGLang 源码深度解剖 | 源码面试、二次开发 |
 | Part 5 | 面试实战与自检清单 | 面试备战、能力对标 |
+| Part 6 | Deep Research 研究报告 | 面试备战、能力对标 |
+| Part 7 | GPU 架构与 CUDA 编程基础 | 新人入职、基础面试 |
+| Part 8 | 生产部署与运维 | 上线负责人、运维工程师 |
+| Part 9 | 术语表与索引 | 所有人、快速查阅 |
+| Part 10 | 推理引擎生态深度对比 | 技术选型、架构设计 |
+| Part 11 | 具体模型部署案例 | 部署方案设计、面试实战 |
+| Part 12 | 国产 GPU 与异构硬件适配 | 国产化项目、异构迁移 |
+| Part 13 | 成本模型与 ROI 分析 | 技术选型、预算规划 |
+| Part 14 | 安全、对齐与合规 | 上线负责人、安全工程师 |
 | Part 15 | 边缘 AI 硬件地图与约束 | 边缘 AI 工程师、硬件选型 |
 | Part 16 | 边缘推理框架与软件栈 | 端侧部署、框架集成 |
 | Part 17 | 边缘场景优化与落地 | 边缘优化、生产落地 |
@@ -237,3 +246,5 @@ Response Out (streaming / non-streaming)
 | SmoothQuant | W8A8 量化 | 2023 |
 | Medusa / Eagle / MTP | 投机解码 | 2024 |
 | DeepSeek-V2/V3 | MLA + MoE + Multi-Token Prediction | 2024 |
+| DeepSeek NSA / V3.2 DSA | 原生稀疏注意力（压缩块 + 选择块 + Indexer） | 2025 |
+| FastMTP / Dynamic Speculative Decoding | 生产环境投机解码优化 | 2025 |

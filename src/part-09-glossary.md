@@ -39,7 +39,9 @@
 | **DLA** | Deep Learning Accelerator | 专用深度学习加速器，常与 GPU 共享内存 | Part 15 §15.2.1 |
 | **DP** | Data Parallelism | 数据并行 | Part 2 §2.2.4 |
 | **DP Attention** | Data Parallel Attention | vLLM 针对 MLA 的按请求分区 attention | Part 6 Finding 1-2 |
-| **dFlash** | - | SGLang 的 in-filling 投机解码 | Part 2 §2.6.3, Part 4 §4.6.3 |
+| **dFlash** | draft-Flash | in-filling 式投机解码（SGLang 首创，vLLM 已移植） | Part 2 §2.6.3, Part 4 §4.6.3 |
+| **D-LLM** | Diffusion LLM | 面向 LLaDA / SDAR 等扩散式 LLM 的推理调度 | Part 4 §4.10 |
+| **DSA** | DeepSeek Sparse Attention | DeepSeek V3.2 的分层稀疏注意力（Indexer + top-k 选择） | Part 2 §2.4.4, Part 4 §4.10 |
 
 ## E
 
@@ -48,6 +50,8 @@
 | **Eagle** | - | 投机解码算法，用轻量 draft model | Part 2 §2.6.2, Part 3 §3.5, Part 4 §4.6 |
 | **Edge TPU** | - | Google 推出的低功耗 AI 加速器，主要用于 TFLite/LiteRT 生态 | Part 16 §16.5.3 |
 | **EP** | Expert Parallelism | 专家并行（MoE 专用） | Part 2 §2.2.3 |
+| **Elastic EP** | - | 运行期动态增删专家组的并行方案 | Part 4 §4.10 |
+| **EPLB** | Expert Parallel Load Balancing | MoE 专家并行负载均衡（SGLang 按访问分布重排） | Part 4 §4.10 |
 
 ## F
 
@@ -97,6 +101,8 @@
 | **KV Cache Manager** | - | vLLM 中管理 block 分配的组件 | Part 3 §3.3 |
 | **KV Cache Quantization** | - | 对 KV Cache 做 INT8/INT4 等低精度量化以节省内存 | Part 17 §17.1.4 |
 | **KV Connector** | - | vLLM V1 中用于 PD 分离的 KV 传输连接器 | Part 3 §3.2.4 |
+| **KV Offload / Tiering** | - | 显存不足时将 KV Cache 卸载到 CPU 或多级存储（FS/P2P） | Part 2 §2.5.2, Part 3 §3.7 |
+| **KV Canary** | - | SGLang 的 KV Cache 完整性校验/扰动注入工具 | Part 4 §4.10 |
 
 ## L
 
@@ -122,6 +128,7 @@
 |------|---------|------|----------|
 | **NPU** | Neural Processing Unit | 神经网络处理单元，边缘设备常见 AI 加速器 | Part 15 §15.2.2, Part 17 §17.4 |
 | **NVLink** | - | NVIDIA 高速卡间互联 | Part 1 §1.4, Part 7 §7.1 |
+| **NSA** | Native Sparse Attention | DeepSeek V3.2 的稀疏注意力：压缩块 + 选择块 + 滑动窗口 | Part 2 §2.4.4, Part 4 §4.10 |
 
 ## O
 

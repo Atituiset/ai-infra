@@ -1,6 +1,7 @@
 # Part 8 补充：生产部署与运维
 
-> **面向角色**：需要上线 LLM 推理服务的工程师  > **目标**：补齐 benchmark、部署、监控、故障排查的实战经验
+> **面向角色**：需要上线 LLM 推理服务的工程师  
+> **目标**：补齐 benchmark、部署、监控、故障排查的实战经验
 
 ---
 
@@ -92,6 +93,57 @@ python -m sglang.bench_serving \
 | `--enable-hicache` | HiCache 三级缓存 | 多实例共享场景 |
 | `--speculative-algorithm EAGLE` | 投机解码 | 延迟敏感 |
 | `--disaggregation-mode prefill` / `decode` | PD 分离 | 大规模生产 |
+
+---
+
+### 8.2.3 KV Cache Offload / Tiering 部署实操
+
+当单卡显存不足、但又不希望牺牲 `max_model_len` 或并发数时，除了 KV Cache 量化，还可以把不活跃的 KV 块换出到 CPU / 远端存储（Part 3 §3.7）。适用场景与配置如下。
+
+**什么时候值得开**：
+
+| 场景 | 判断依据 | 建议 |
+|------|---------|------|
+| 长空闲序列多 | 大量请求有很长的 thinking/等待段，期间不再产生新 token | 开启后收益最大 |
+| 并发高但单请求短 | KV 总量超过 GPU 容量 20% 以上 | 可开，观察 TPOT 抖动 |
+| 延迟 SLA 极严 | TPOT 要求 < 20ms | 谨慎，offload 回读会增加 P99 延迟 |
+| 短 prompt 高频问答 | 每个请求 KV 都很小 | 通常不需要 |
+
+**vLLM 配置示例**：
+
+```bash
+python -m vllm.entrypoints.openai.api_server \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --tensor-parallel-size 2 \
+  --kv-offloading-size 40 \
+  --kv-offloading-backend native
+```
+
+参数说明（基于当前主线，`vllm/config/cache.py` + `engine/arg_utils.py`）：
+
+| 参数 | 含义 | 备注 |
+|------|------|------|
+| `--kv-offloading-size` | 每卡允许换出到 CPU 的 KV 空间（GiB） | 0 = 关闭（默认） |
+| `--kv-offloading-backend` | 卸载后端 | `native`（默认）或 `lmcache` |
+| `--cpu-offload-gb` / `--offload-mode cpu` | 权重 offload（与 KV offload 是两件事） | 权重常驻 CPU，按层换入，适合极小显存 |
+
+**SGLang 配置示例**：
+
+```bash
+python -m sglang.launch_server \
+  --model deepseek-ai/DeepSeek-V3 \
+  --cpu-offload-gb 100 \
+  --offload-mode cpu
+```
+
+PD 分离场景下，decode 侧可独立开启异步 KV 卸载：
+`--disaggregation-decode-enable-offload-kvcache`（配合 Mooncake/HiCache 使用）。
+
+**部署注意点**：
+1. **offload 带宽是硬约束**：PCIe 带宽（~64 GB/s）远低于 HBM（3 TB/s+），回读大量 KV 会直接推高 TPOT。实测应对比"开/关"的 P50/P99。
+2. **不要与投机解码叠加**：投机解码需要频繁访问 draft KV，offload 的往返开销容易吃掉加速收益。
+3. **监控指标**：关注 offload 命中率、换入/换出次数、PCIe 吞吐（`nvidia-smi dmon` / 引擎 metrics），出现频繁抖动说明 offload 边界参数不合理。
+4. **与量化优先级**：先做 KV Cache INT8/FP8（几乎无延迟代价），仍不够再考虑 offload；offload 是"用带宽换容量"的最后手段。
 
 ---
 

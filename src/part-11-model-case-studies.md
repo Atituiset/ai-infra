@@ -1,6 +1,7 @@
 # Part 11：具体模型部署案例
 
-> **面向角色**：需要为特定大模型设计部署方案的工程师  > **目标**：通过 4 个典型模型，展示从模型特性到部署参数的完整推导
+> **面向角色**：需要为特定大模型设计部署方案的工程师  
+> **目标**：通过 4 个典型模型，展示从模型特性到部署参数的完整推导
 
 ---
 
@@ -75,6 +76,24 @@ python -m sglang.launch_server \
 - DeepSeek-V3 对 EP 的 AllToAll 带宽要求极高，建议使用 NVLink/IB
 - MLA 压缩 KV 后，prefix caching 收益更大
 - MTP 可开启，但大规模生产收益衰减（Part 6 Finding 4）
+
+### 11.1.1 DeepSeek-V3.2 / V4 演进（2025-2026）
+
+DeepSeek 家族的注意力机制迭代非常快，部署前必须先确认引擎版本支持：
+
+| 版本 | 关键变化 | 部署影响 |
+|------|---------|---------|
+| **V3 / V3.1** | MLA + MoE + MTP | 本手册 Part 11 主体案例 |
+| **V3.2-Exp** | 引入 DSA（DeepSeek Sparse Attention，Indexer + top-k 选择），128K 上下文 | 需要支持 DSA 的 attention backend（SGLang `nsa_backend.py` / vLLM IndexCache） |
+| **V3.2** | 上下文扩到 160K | 同上 |
+| **V4-Flash** | 284B 总参 / 13B 激活，DSA2 = CSA（Compressed Sparse Attention）+ HCA（Heavily Compressed Attention）混合，原生 1M token 上下文 | 稀疏模式与 V3 完全不同，必须用新版引擎 + 专用内存池（SGLang `deepseek_v4_memory_pool.py`） |
+| **V4 Pro** | 1.6T MoE，混合注意力架构，MIT license | 大集群部署，EP + 稀疏注意力协同 |
+
+**工程要点**：
+1. **DSA/CSA 的选择索引需要特殊处理**：top-k 索引如果不缓存，每个 layer 都要重复计算（vLLM IndexCache、SGLang 均在运行时复用）。
+2. **KV Cache 复用粒度变化**：稀疏注意力下"跳过"的块不参与计算，但仍占据内存；Radix/Block Cache 的前缀命中逻辑需要适配稀疏 mask。
+3. **引擎版本锁定**：DeepSeek 新架构往往需要配套的新 kernel（MLA → DSA → CSA/HCA 是三条不同的 kernel 路径），不能混用。
+4. **成本结构变化**：V3.2-Exp 官方 API 价格下调 50%+，稀疏注意力是核心原因——这也解释了为什么 `$/1M tokens`（Part 13）需要按模型代数重估。
 
 ---
 

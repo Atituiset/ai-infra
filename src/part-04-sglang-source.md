@@ -472,9 +472,9 @@ class EagleWorkerV2:
         """
 ```
 
-### 4.6.3 dFlash：SGLang 独有特性 ☆
+### 4.6.3 dFlash（draft-Flash）☆
 
-dFlash（draft-Flash）是 SGLang 的一个创新投机解码方法：
+dFlash（draft-Flash）是 SGLang 提出的投机解码方法，现已被 vLLM 移植支持（`vllm/vllm/v1/spec_decode/dflash.py`，面向 Qwen3.5 等支持 in-filling 的模型）：
 
 ```
 传统 Eagle:   Target → hidden_states → Draft → draft_tokens → Target verify
@@ -486,6 +486,8 @@ dFlash:      Target → 在 attention 中直接"填充" draft tokens
 - 不需要额外的 draft model 参数
 - 对短 prompt 场景尤其有效
 ```
+
+> 演进：SGLang 最早实现（Part 4 源码），vLLM 后续在 V1 引擎中提供 `DFlashProposer`。两者在 mask token 处理和上下文 K/V 复用上思路一致，实现细节略有差异。
 
 ---
 
@@ -560,5 +562,26 @@ TokenToKVPool (KVCache):
 深入定制:
   12. sglang/srt/layers/attention/            ← Attention kernel
   13. sglang/srt/layers/quantization/         ← 量化 kernel
+
+---
+
+## 4.10 最新特性速览
+
+> 基于 SGLang 当前主线（2026 年中），以下特性在 Part 2/4 主干章节之外值得单独跟踪。
+
+| 特性 | 文件位置 | 说明 |
+|------|---------|------|
+| **DeepSeek V3.2 稀疏注意力（NSA / DSA）** | `sglang/srt/layers/attention/nsa_backend.py`、`dsa/` | Native Sparse Attention 与 DeepSeek Sparse Attention：压缩 KV 块 + 硬件对齐的稀疏掩码，长上下文下显著降内存/算力 |
+| **DeepSeek V4 专用 Attention** | `layers/attention/deepseek_v4_backend.py`、`deepseek_v4_memory_pool.py` | V4 架构专用 backend 与内存池（含 HIP/Radix 变体） |
+| **Hybrid Attention** | `layers/attention/hybrid_attn_backend.py`、`hybrid_linear_attn_backend.py` | 注意力 + 线性注意力（Mamba 类）混合架构的联合调度 |
+| **D-LLM（Diffusion LLM）调度** | `sglang/srt/dllm/` | 面向 LLaDA、SDAR 等扩散式 LLM 的调度：`joint_threshold` / `low_confidence` 算法、mask token 管理 |
+| **Elastic EP** | `sglang/srt/elastic_ep/` | 运行期动态增删专家组（Expert Backup 机制），应对负载波动 |
+| **EPLB（专家并行负载均衡）** | `sglang/srt/eplb/` | 按实际专家访问分布做负载均衡（LPLB solver + 分布记录器），缓解 MoE 热点专家倾斜 |
+| **KV Canary** | `sglang/srt/kv_canary/` | KV Cache 完整性校验/扰动注入工具，用于定位静默损坏与精度问题 |
+| **Grammar / Function Calling** | `sglang/srt/constrained/`、`sglang/srt/function_call/` | xgrammar / outlines / llguidance 多种语法后端；DeepSeek-V3/V4、Qwen、Gemma 等数十个模型的 function-call 格式检测器 |
+| **远端模型权重 Connector** | `sglang/srt/connector/` | 从 S3 / Redis / Azure 等远端加载权重（`weight_iterator` 抽象），便于集群化部署 |
+| **可观测性** | `sglang/srt/observability/` | OpenTelemetry 等可观测性接入 |
+
+**跟踪建议**：这些特性大多随模型架构演进（V3.2/V4、扩散 LLM）而来，面试或方案设计时可将其作为"了解当前主线"的加分项；核心的调度 / RadixAttention / Overlap / PD 分离仍以正文各节为准。
   14. sgl-kernel/                             ← C++/CUDA 自定义 kernel
 ```

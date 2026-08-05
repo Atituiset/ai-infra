@@ -520,7 +520,7 @@ class FP8Config:
 |------|---------|------|
 | **V1 Engine** | `vllm/v1/` | 主线开发中 |
 | **Multi-Engine DP** | `vllm/v1/engine/` — `EngineCoreRequest.data_parallel_rank` | 已支持 |
-| **EEP (Elastic EP)** | `vllm/v1/engine/` — `ReconfigureDistributedRequest` | 开发中 |
+| **EEP (Elastic EP)** | `vllm/v1/engine/` — `ReconfigureDistributedRequest`（运行期动态调整 DP rank/EP 分组） | 已支持 |
 | **KV Events** | `vllm/distributed/kv_events/` | 已支持 |
 | **EC Transfer** | `vllm/distributed/ec_transfer/` | 已支持 |
 | **Structured Output** | `vllm/v1/structured_output/` | 已支持 |
@@ -528,6 +528,13 @@ class FP8Config:
 | **Prefix Caching** | `vllm/v1/core/kv_cache_manager.py` → `enable_caching` | 已支持 |
 | **LoRA** | `vllm/lora/` + `vllm/v1/worker/lora_model_runner_mixin.py` | 已支持 |
 | **Multimodal** | `vllm/multimodal/` + model implementations | 已支持 |
+| **KV Cache Offload / Tiering** | `vllm/v1/kv_offload/`（CPU 卸载 + 多级 tiering，支持 FS/P2P/async-lookup 二级存储） | 已支持 |
+| **SimpleKVOffload** | `vllm/v1/simple_kv_offload/`（面向单卡的轻量 CPU offload） | 已支持 |
+| **DFlash 投机解码** | `vllm/v1/spec_decode/dflash.py`（in-filling 式投机，支持 Qwen3.5 多模态） | 已支持 |
+| **动态投机解码 (Dynamic Spec Decode)** | `vllm/v1/spec_decode/dynamic/`（运行时调整 draft 长度/策略） | 已支持 |
+| **Suffix Decoding** | `vllm/v1/spec_decode/suffix_decoding.py`（基于后缀树的采样级缓存，需 arctic_inference） | 实验特性 |
+| **Late Interaction Pooling** | `vllm/v1/pool/late_interaction.py`（多模态 token 延迟融合池化） | 已支持 |
+| **Qwen3-DSpark / DeepSeek V4 等新架构** | `vllm/model_executor/models/qwen3_dspark.py` 等 | 已支持 |
 
 ---
 

@@ -382,8 +382,8 @@ llama.cpp 是社区最活跃的端侧 LLM 推理框架之一，核心特点是**
 |------|------|---------|
 | `src/` | llama 核心实现 | `llama-kv-cache.h/.cpp`、`llama-model-loader.h/.cpp`、`llama-quant.h/.cpp`、`llama-sampler.h/.cpp`、`llama-grammar.cpp` |
 | `ggml/` | 张量计算库与后端抽象 | `include/ggml.h`、`include/ggml-backend.h`、`include/gguf.h`、`src/ggml-backend.cpp`、`src/ggml-backend-reg.cpp` |
-| `gguf-py/` | GGUF 转换与量化工具 | `convert_hf_to_gguf.py` |
-| `examples/` | 可执行程序源码 | `main/main.cpp`、`server/server.cpp`、`quantize/quantize.cpp` |
+| `tools/` | 可执行程序源码（CLI / Server / 量化等） | `cli/`、`server/`、`quantize/`、`imatrix/`、`gguf-split/` 等子目录 |
+| `convert_hf_to_gguf.py` | GGUF 转换脚本（仓库根目录） | 将 HuggingFace 模型转为 GGUF |
 | `common/` | 公共 CLI 工具代码 | `common.cpp`、`sampling.cpp` |
 | `models/` | 部分模型下载与测试脚本 | - |
 
@@ -454,10 +454,10 @@ llama.cpp 支持的常见量化类型：
 
 ```bash
 # 1. 安装 llama.cpp 转换依赖
-pip install -r llama.cpp/requirements/requirements-convert.txt
+pip install -r llama.cpp/requirements/requirements-convert_hf_to_gguf.txt
 
 # 2. 将 HuggingFace 模型转换为 GGUF（FP16）
-python llama.cpp/gguf-py/gguf/scripts/convert_hf_to_gguf.py \
+python llama.cpp/convert_hf_to_gguf.py \
   --input-dir ./Llama-2-7b-hf \
   --outfile ./llama-2-7b-f16.gguf \
   --outtype f16
@@ -546,7 +546,7 @@ llama.cpp 在构建计算图时，会根据每个算子的 `backend_supports_op`
 ./llama-quantize ./model-f16.gguf ./model-q4_k_m.gguf Q4_K_M
 
 # 查看模型信息
-./llama-gguf-split --list ./model.gguf
+./llama-gguf-split --dry-run ./model.gguf ./model-split.gguf
 ```
 
 **源码阅读路线**：
@@ -582,8 +582,9 @@ Step 6: 多后端
   ggml/src/ggml-backend-reg.cpp
 
 Step 7: CLI 入口
-  examples/main/main.cpp
-  examples/server/server.cpp
+  tools/cli/main.cpp          # llama-cli
+  tools/server/main.cpp       # llama-server
+  tools/server/server.cpp     # HTTP 服务核心实现
 ```
 
 ---
@@ -944,7 +945,7 @@ interpreter = tf.lite.Interpreter(
 - 本书 Part 15：复习边缘硬件约束与选型矩阵。
 - 本书 Part 17：学习边缘 KV Cache 压缩、模型轻量化、VLM 部署等实战优化。
 - TensorRT-LLM 官方文档：`docs/source/deployment-guide/`、`docs/source/features/kvcache.md`。
-- llama.cpp 官方文档：`docs/backend.md`、`docs/quantization.md`、`gguf-py/README.md`。
+- llama.cpp 官方文档：`docs/backend/`（各后端说明）、`docs/multi-gpu.md`、`gguf-py/README.md`。
 - MNN 官方仓库：https://github.com/alibaba/MNN
 
 ---

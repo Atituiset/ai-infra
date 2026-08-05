@@ -77,6 +77,21 @@
 - 对延迟敏感场景：INT4 权重更小 → decode 更快（减少 HBM 读取）
 - 参考：Part 2 §2.7
 
+**Q11: DeepSeek-V3.2 的稀疏注意力（NSA/DSA）如何工作？为什么说训练-推理一致性是前提？**
+- NSA：压缩块 + 选择块（可学习门控）+ 滑动窗口，KV 访问从 O(N) 降到 O(√N) 量级
+- DSA：每层前加 Lightning Indexer 输出 top-k 索引，相邻层复用/缓存选择结果
+- 一致性：如果训练时用全注意力、推理时用稀疏，分布偏移会直接导致精度崩坏，所以必须在训练阶段就采用相同稀疏模式
+- 工程影响：top-k 索引可缓存（vLLM IndexCache），Radix/Block Cache 需要感知稀疏 mask
+- 参考：Part 2 §2.4.4, Part 4 §4.10
+
+**Q12: 显存不足时，KV Cache Offload 和传统 Swapping 有什么区别？**
+- 传统 Swapping（vLLM Preemption）：KV 换出到 CPU，请求被抢占，换回时重新调度
+- KV Offload / Tiering：按访问频率/热度分层放置（GPU → CPU → FS/P2P/远端），对请求透明，类似操作系统的 page cache 分级
+- 关键指标：offload 带宽与 HBM 带宽的差距决定收益；长空闲序列收益最大
+- 参考：Part 3 §3.7
+
+> 注：Q11/Q12 属于"当前主线加分题"，考察候选人是否跟踪 2025-2026 年的新架构，答不上不影响基础评分。
+
 ---
 
 ## 5.2 源码定位题

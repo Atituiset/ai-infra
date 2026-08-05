@@ -359,6 +359,37 @@ MLA:
 - 收益：KV Cache 压缩 5-10x，同等显存支持更多并发
 - 代价：decode 时每次需要上投影（额外的 matmul），但因为 decode 是 memory-bound，所以影响不大
 
+### 2.4.4 稀疏注意力：NSA / DSA（DeepSeek V3.2 贡献）★
+
+DeepSeek-V3.2-Exp 引入了两类稀疏注意力，目标是在**不牺牲精度的前提下把长上下文的 KV Cache 和算力降下来**，对边缘和长上下文服务都重要：
+
+**NSA（Native Sparse Attention）**
+
+```
+标准 Attention:    每个 query 关注全部 N 个 K/V
+NSA:
+  1. 压缩块（Compression）：相邻 token 的 K/V 先聚合为粗粒度块
+  2. 选择块（Selection）：用可学习的门控（gating）选出少量重要块
+  3. 滑动窗口（Sliding window）：保留最近 W 个 token 的细粒度 K/V
+
+  query 只与【压缩块 + 选中块 + 窗口块】计算 attention
+  → KV 访问量从 O(N) 降到 O(√N) 量级
+```
+
+NSA 在训练时就采用与推理一致的稀疏模式（train-time sparsity），因此不需要事后微调。论文（arXiv:2502.11089）显示在 64K 长序列下相对 Full Attention 有数倍加速；DeepSeek-V3.2-Exp 官方发布称总体推理效率提升 **1.7x**，同时保持稠密注意力精度。
+
+**DSA（DeepSeek Sparse Attention）**
+
+DSA 是 NSA 的进一步演进（DeepSeek-V3.2-Exp 采用），核心变化：
+- **Lightning Indexer（闪电索引器）**：每个 transformer layer 前新增一个轻量 Indexer，由两个低秩线性层对 Q 和 K 投影后输出 top-k 选择索引。
+- **层级复用与缓存**：相邻层共享或缓存选择结果，避免每层重复计算 top-k（vLLM 提供 IndexCache 特性专门缓存复用这些索引）。
+- **硬件对齐**：选择结果按 GPU 友好格式排列，适配 FlashAttention 类 kernel。
+
+**工程注意点**：
+- 稀疏注意力的实现强依赖 kernel 支持（FlashInfer / SGLang 的 `nsa_backend` / vLLM attention backend），框架版本要匹配模型版本。
+- 稀疏性对 KV Cache 管理的影响：被"跳过"的块仍可能被后续请求复用，因此 Radix/Block Cache 需要感知稀疏模式，否则前缀命中率下降（SGLang 在 `layers/attention/nsa_backend.py` 中处理）。
+- 面试考察点：为什么训练时和推理时稀疏模式必须一致？因为不一致会导致分布偏移、精度崩坏。
+
 ---
 
 ## 2.5 长文本与多模态 ☆
