@@ -156,6 +156,18 @@ vLLM/SGLang 的 `cache_salt` 参数可用于租户级 cache 隔离：
 EngineCoreRequest(..., cache_salt="tenant_123")
 ```
 
+### 14.4.3 机密计算与 TEE ☆→★
+
+当"不信任平台方"成为需求（金融、医疗、跨企业协作），需要硬件级隔离：
+
+| 技术 | 阵营 | LLM 推理可用性 |
+|------|------|---------------|
+| **NVIDIA Confidential Computing** (H100+) | GPU 内存加密 + TEE，CPU 侧配 TDX/SEV-SNP | 主流路线：vLLM/TensorRT-LLM 有官方部署指南 |
+| Intel TDX / AMD SEV-SNP | VM 级内存加密 | 与上者配合构成完整链路 |
+| Apple Private Cloud Compute | 自研芯片定制 | 消费端标杆案例（2024-），证明该方向产品化可行 |
+
+**代价账**：内存加密带来个位数百分比性能损耗；TEE 内无法使用部分依赖侧信道优化的 kernel——安全预算要计入容量规划。与 §14.4.2 的逻辑隔离互补：TEE 解决"防平台内鬼"，cache_salt 解决"防租户互窥"。
+
 ---
 
 ## 14.5 合规要求

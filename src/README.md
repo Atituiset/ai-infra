@@ -25,6 +25,11 @@
 | **面试备战** | Part 5 (自检) → 按缺口回溯 Part 1-4 |
 | **源码贡献** | 直接跳到 Part 3 或 Part 4 的"源码阅读路线" |
 | **边缘 AI 工程师 / 平头哥生态** | Part 15 → Part 16 → Part 17（重点 §16.4 MNN） |
+| **平台工程师 / SRE** | Part 8 → Part 18（网关、调度、容错） |
+| **RL Infra / Agent 平台** | Part 19 → Part 18 §18.5（结构化输出） |
+| **模型部署 / 压缩工程师** | Part 22 → Part 2 §2.7 → Part 17（端侧） |
+| **内核 / 算子研发** | Part 7 → Part 24 → Part 20 §20.3 |
+| **多模态 / RAG 平台** | Part 25 → Part 18 §18.3 |
 
 ### 按问题速查
 
@@ -58,6 +63,21 @@
 | 边缘 KV Cache 怎么省？ | Part 17 §17.1 |
 | VLM/VLA 怎么部署到边缘？ | Part 17 §17.5 |
 | 平头哥玄铁/MNN 生态？ | Part 16 §16.4 + Part 12 |
+| K8s 上 GPU 怎么调度/共享（DRA/MIG/MPS）？ | Part 18 §18.2 |
+| 推理网关 / cache-aware 路由 / goodput？ | Part 18 §18.3 |
+| 多租户 LoRA 服务（S-LoRA）？ | Part 18 §18.4 |
+| 结构化输出 / constrained decoding？ | Part 18 §18.5 |
+| Reasoning 模型对 infra 的影响？ | Part 19 §19.2 |
+| Agent 会话 KV 生命周期 / sticky routing？ | Part 19 §19.3 |
+| RL 训练的 rollout engine / weight sync？ | Part 19 §19.4 |
+| MCP 是什么、影响哪些层？ | Part 19 §19.5 |
+| Continuous batching 是怎么演化来的？ | Part 20 §20.2 |
+| NVLink vs Ultra Ethernet vs UALink？ | Part 20 §20.5 |
+| 某技术对应哪篇论文？阅读顺序？ | Part 21 |
+| GPTQ/AWQ 原理与取舍？剪枝怎么选？ | Part 22 |
+| 训练显存账 / ZeRO/FSDP / 万卡容错？ | Part 23 |
+| AI 编译器栈对比？算子怎么开发融合？ | Part 24 |
+| 扩散模型怎么 serving？向量检索 infra？ | Part 25 |
 
 ---
 
@@ -81,6 +101,14 @@
 - [Part 15：边缘 AI 硬件地图与约束](part-15-edge-hardware.md)
 - [Part 16：边缘推理框架与软件栈](part-16-edge-frameworks.md)
 - [Part 17：边缘场景优化与落地](part-17-edge-optimization.md)
+- [Part 18：引擎之上 — 网关、调度与集群系统层](part-18-system-layer.md)
+- [Part 19：Agentic 与 RL 时代的推理负载](part-19-agentic-rl.md)
+- [Part 20：技术编年史 — AI Infra 演进脉络](part-20-history.md)
+- [Part 21：论文对照地图（Paper Map）](part-21-paper-map.md)
+- [Part 22：模型压缩全景](part-22-compression.md)
+- [Part 23：训练 Infra 速览](part-23-training-infra.md)
+- [Part 24：AI 编译器与算子开发](part-24-compiler-operators.md)
+- [Part 25：多模态生成与检索服务](part-25-multimodal-retrieval.md)
 
 ---
 
@@ -95,7 +123,7 @@
 
 ## 维护
 
-- 最后更新：2026-07-03
+- 最后更新：2026-08-24
 - 基于源码版本：vLLM V1 引擎开发主线、SGLang 最新主线、TensorRT-LLM 主线、llama.cpp 主线
 - Profile 岗位参考：`profile.md` — 训推平台及引擎研发主任工程师
 

@@ -9,7 +9,8 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
-| **AWQ** | Activation-aware Weight Quantization | 激活感知权重量化 | Part 1 §1.5.3, Part 2 §2.7 |
+| **AWQ**
+| **Activation Recomputation** | - | 激活重计算：不存中间激活、反向重算以省显存 | Part 23 §23.2 | | Activation-aware Weight Quantization | 激活感知权重量化 | Part 1 §1.5.3, Part 2 §2.7 |
 | **AllReduce** | - | 集合通信操作，各节点归约后广播 | Part 2 §2.2 |
 | **AllToAll** | - | 集合通信操作，每个节点向所有节点发送数据 | Part 2 §2.2.3 |
 | **Attention** | - | Transformer 核心机制 | Part 1 §1.1 |
@@ -18,7 +19,8 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
-| **Batching** | - | 批处理 | Part 1 §1.3 |
+| **Batching**
+| **BF16** | Brain Floating Point 16 | bfloat16 格式，指数位同 FP32，训练默认 | Part 23 §23.4 | | - | 批处理 | Part 1 §1.3 |
 | **Block Table** | - | PagedAttention 中虚拟 block 到物理 block 的映射 | Part 2 §2.4.1, Part 3 §3.3 |
 | **Breakable CUDA Graph** | - | vLLM V1 中支持动态断点的 CUDA Graph | Part 3 §3.4.2 |
 
@@ -27,7 +29,9 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **Continuous Batching** | - | 连续批处理 | Part 1 §1.3.2, Part 2 §2.1 |
-| **Chunked Prefill** | - | 将长 prompt 切分为多个 chunk 的 prefill | Part 1 §1.3.3, Part 2 §2.1 |
+| **Constrained Decoding** | - | 受限解码：用语法/Schema 在采样时屏蔽非法 token（XGrammar/Outlines） | Part 18 §18.5 |
+| **Chunked Prefill**
+| **Custom Op** | - | 引擎注册的自定义算子（vLLM custom_ops / sgl-kernel） | Part 24 §24.4 | | - | 将长 prompt 切分为多个 chunk 的 prefill | Part 1 §1.3.3, Part 2 §2.1 |
 | **CUDA Graph** | - | 记录 CUDA kernel 序列并复用 | Part 3 §3.4.2, Part 7 §7.2 |
 | **CP** | Context Parallelism | 上下文并行 | Part 1 §1.1.4, Part 2 §2.2.4 |
 
@@ -35,8 +39,10 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
-| **Decode** | - | 自回归生成阶段（每次 1 token） | Part 1 §1.1.2 |
+| **Decode**
+| **Distillation** | Knowledge Distillation | 知识蒸馏：教师模型能力转移到小模型 | Part 22 §22.4 | | - | 自回归生成阶段（每次 1 token） | Part 1 §1.1.2 |
 | **DLA** | Deep Learning Accelerator | 专用深度学习加速器，常与 GPU 共享内存 | Part 15 §15.2.1 |
+| **DRA** | Dynamic Resource Allocation | K8s 声明式、拓扑感知的设备分配框架，逐步取代 device plugin | Part 18 §18.2.2 |
 | **DP** | Data Parallelism | 数据并行 | Part 2 §2.2.4 |
 | **DP Attention** | Data Parallel Attention | vLLM 针对 MLA 的按请求分区 attention | Part 6 Finding 1-2 |
 | **dFlash** | draft-Flash | in-filling 式投机解码（SGLang 首创，vLLM 已移植） | Part 2 §2.6.3, Part 4 §4.6.3 |
@@ -58,6 +64,7 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **FlashAttention** | - | IO-aware exact attention | Part 1 §1.5, Part 2 §2.4.2 |
+| **FSDP** | Fully Sharded Data Parallel | PyTorch 原生全分片数据并行（ZeRO-3 思想） | Part 23 §23.7 |
 | **FlashInfer** | - | 针对推理优化的 attention kernel 库 | Part 2 §2.4.2, Part 4 §4.4 |
 | **FP8** | - | 8-bit floating point（E4M3/E5M2） | Part 1 §1.5.4, Part 2 §2.7 |
 
@@ -65,7 +72,9 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
+| **Gang Scheduling** | - | 成组调度：作业内全部 Pod 就位才启动（Volcano/Kueue） | Part 18 §18.2.3 |
 | **GGUF** | Georgi Gerganov Universal Format | llama.cpp 使用的二进制模型格式，支持按张量选择量化类型 | Part 16 §16.3.2 |
+
 | **Goodput** | - | 有效吞吐（成功请求的吞吐） | Part 1 §1.2 |
 | **GPTQ** | - | 基于 Hessian 的权重量化 | Part 1 §1.5.2 |
 | **GQA** | Grouped Query Attention | 分组查询注意力 | Part 1 §1.1.4 |
@@ -97,6 +106,7 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
+| **Kernel Fusion** | - | 算子融合：合并算子减少 HBM 往返（垂直/水平/改数学三型） | Part 24 §24.5 |
 | **KV Cache** | Key-Value Cache | Transformer 推理中存储历史 K/V 的缓存 | Part 1 §1.1.3 |
 | **KV Cache Manager** | - | vLLM 中管理 block 分配的组件 | Part 3 §3.3 |
 | **KV Cache Quantization** | - | 对 KV Cache 做 INT8/INT4 等低精度量化以节省内存 | Part 17 §17.1.4 |
@@ -108,6 +118,7 @@
 
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
+| **Low-Rank Decomposition** | - | 低秩分解压缩 | Part 22 §22.5 |
 | **LLM** | Large Language Model | 大语言模型 | 全书 |
 | **LPDDR** | Low-Power Double Data Rate | 低功耗双倍数据速率内存，边缘设备常用共享内存类型 | Part 15 §15.1.2 |
 | **LRU** | Least Recently Used | 最近最少使用驱逐策略 | Part 4 §4.2.4 |
@@ -120,7 +131,12 @@
 | **MNN** | - | 阿里巴巴开源的轻量级端侧推理框架 | Part 16 §16.4 |
 | **MoE** | Mixture of Experts | 混合专家模型 | Part 2 §2.2.3 |
 | **MTP** | Multi-Token Prediction | 多 token 预测（投机解码） | Part 2 §2.6.3, Part 6 Finding 4 |
-| **Memory Wall** | - | 内存带宽成为性能瓶颈 | Part 1 §1.4.2 |
+| **Memory Wall**
+| **Mixed Precision** | - | 混合精度训练（FP16/BF16/FP8 + FP32 主权重） | Part 23 §23.4 |
+| **MLIR** | Multi-Level Intermediate Representation | 可组合编译器基础设施 | Part 24 §24.2 | | - | 内存带宽成为性能瓶颈 | Part 1 §1.4.2 |
+| **MCP** | Model Context Protocol | Anthropic 开源的模型-工具连接标准（Tools/Resources/Prompts） | Part 19 §19.5 |
+| **MIG** | Multi-Instance GPU | NVIDIA 硬件级单卡分区（最多 7 实例），显存/故障域隔离 | Part 18 §18.2.4 |
+| **MPS** | Multi-Process Service | NVIDIA 多进程共享 GPU 的服务，SM 配额隔离 | Part 18 §18.2.4 |
 
 ## N
 
@@ -128,6 +144,7 @@
 |------|---------|------|----------|
 | **NPU** | Neural Processing Unit | 神经网络处理单元，边缘设备常见 AI 加速器 | Part 15 §15.2.2, Part 17 §17.4 |
 | **NVLink** | - | NVIDIA 高速卡间互联 | Part 1 §1.4, Part 7 §7.1 |
+| **NVL72 / Scale-up Domain** | - | NVLink5+NVSwitch 组成的 72 卡高带宽域（GB200） | Part 20 §20.5 |
 | **NSA** | Native Sparse Attention | DeepSeek V3.2 的稀疏注意力：压缩块 + 选择块 + 滑动窗口 | Part 2 §2.4.4, Part 4 §4.10 |
 
 ## O
@@ -135,6 +152,7 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **Overlap Scheduling** | - | SGLang 的 CPU/GPU 并行调度 | Part 2 §2.1.2, Part 4 §4.3 |
+| **OpenTelemetry GenAI** | - | LLM 可观测性的语义约定（gen_ai.* 属性与指标） | Part 18 §18.8 |
 
 ## P
 
@@ -142,10 +160,12 @@
 |------|---------|------|----------|
 | **PagedAttention** | - | vLLM 的页式 KV Cache 管理 | Part 2 §2.4.1, Part 3 §3.3 |
 | **PD 分离** | Prefill-Decode Disaggregation | 将 prefill 和 decode 分离到不同节点 | Part 1 §0.4, Part 2 §2.3 |
+| **Partial Rollout** | - | RL 中长轨迹在工具等待点挂起、跨 step 续跑的采样方式 | Part 19 §19.4.5 |
 | **Pipeline Bubble** | - | PP 中 GPU 等待数据的时间 | Part 2 §2.2.2 |
 | **PP** | Pipeline Parallelism | 流水线并行 | Part 2 §2.2.2 |
 | **Prefill** | - | 处理 prompt 阶段 | Part 1 §1.1.2 |
-| **Prefix Caching** | - | 缓存并复用公共前缀的 KV | Part 2 §2.4.1, Part 3 §3.3.3 |
+| **Prefix Caching**
+| **Pruning** | - | 剪枝：非结构化 / 2:4 半结构化 / 结构化三路线 | Part 22 §22.3 | | - | 缓存并复用公共前缀的 KV | Part 2 §2.4.1, Part 3 §3.3.3 |
 
 ## Q
 
@@ -153,7 +173,8 @@
 |------|---------|------|----------|
 | **QNN** | Qualcomm Neural Network | Qualcomm 神经网络 SDK，面向 Hexagon NPU / HTP | Part 15 §15.2.2, Part 16 §16.5.3 |
 | **QPS** | Queries Per Second | 每秒查询数 | Part 1 §1.2 |
-| **Quantization** | - | 量化 | Part 1 §1.5, Part 2 §2.7 |
+| **Quantization**
+| **QAT** | Quantization-Aware Training | 量化感知训练，插入 fake-quant 节点训练 | Part 22 §22.2.1 | | - | 量化 | Part 1 §1.5, Part 2 §2.7 |
 
 ## R
 
@@ -161,6 +182,9 @@
 |------|---------|------|----------|
 | **RadixAttention** | - | SGLang 的前缀树式 KV Cache | Part 2 §2.1.2, Part 4 §4.2 |
 | **RDMA** | Remote Direct Memory Access | 远程直接内存访问 | Part 2 §2.3.3 |
+| **RLVR** | Reinforcement Learning with Verifiable Rewards | 用可验证奖励做 RL 后训练（R1 范式） | Part 19 §19.4.1 |
+| **Rollout Engine** | - | RL 中负责策略采样的推理引擎（复用 vLLM/SGLang） | Part 19 §19.4.2-19.4.3 |
+| **Ring Attention** | - | 序列维环形分块的 CP 实现，支撑超长上下文训练 | Part 23 §23.3 |
 | **RKNN** | - | 瑞芯微为其 NPU 提供的模型转换与运行时工具链 | Part 15 §15.3.2, Part 16 §16.5.4 |
 | **RoPE** | Rotary Position Embedding | 旋转位置编码 | Part 2 §2.5.1 |
 
@@ -169,6 +193,9 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **Scheduler** | - | 推理引擎调度器 | Part 2 §2.1 |
+| **S-LoRA** | - | 单 base model 服务数千 LoRA adapter 的系统（Unified Paging） | Part 18 §18.4 |
+| **Semantic Cache** | - | 网关层按语义命中历史答案直接返回的缓存 | Part 18 §18.3.2 |
+| **Session Affinity / Sticky Routing** | - | 同一会话固定路由到同一副本以最大化 prefix 命中 | Part 19 §19.3.2, Part 18 §18.3.3 |
 | **SGLang** | - | 高性能结构化 LLM 编程/推理框架 | 全书 |
 | **Shared Memory** | - / 共享内存 | CPU、GPU/NPU 共用同一颗 LPDDR 的内存架构 | Part 15 §15.1.2 |
 | **SM** | Streaming Multiprocessor | NVIDIA GPU 流式多处理器 | Part 7 §7.1 |
@@ -186,8 +213,19 @@
 | **Tensor Parallelism (TP)** | - | 张量并行 | Part 2 §2.2.1 |
 | **Throughput** | - | 吞吐量 | Part 1 §1.2 |
 | **Top-p / Top-k** | - | 采样策略 | Part 1 §1.6.1 |
-| **TPOT** | Time Per Output Token | 每输出 token 时间 | Part 1 §1.2 |
+| **TPOT**
+| **torch.compile** | - | PyTorch 编译栈（Dynamo 图捕获 + Inductor 代码生成） | Part 24 §24.2-24.3 |
+| **TVM** | Tensor Virtual Machine | 开源深度学习编译栈（OSDI'18） | Part 24 §24.2 |
+| **Triton** | - | OpenAI 的 GPU kernel Python DSL | Part 20 §20.3, Part 24 | | Time Per Output Token | 每输出 token 时间 | Part 1 §1.2 |
 | **TTFT** | Time To First Token | 首 token 时间 | Part 1 §1.2 |
+| **Test-time Compute** | - | 推理时增加计算换取质量（长 CoT/best-of-N），o1/R1 范式 | Part 19 §19.2 |
+
+## U
+
+| 术语 | 英文全称 | 含义 | 所在 Part |
+|------|---------|------|----------|
+| **UALink** | Ultra Accelerator Link | AMD 阵营的加速器 scale-up 互联标准（spec 1.0 于 2025 发布） | Part 20 §20.5 |
+| **UEC** | Ultra Ethernet Consortium | 改造以太网 RDMA 面向 AI 集群的标准组织（spec 1.0 于 2025-06） | Part 20 §20.5 |
 
 ## V
 
@@ -201,6 +239,7 @@
 |------|---------|------|----------|
 | **Warp** | - | 32 个 thread 的 SIMD 执行单元 | Part 7 §7.2.2 |
 | **Wide-EP** | - | vLLM 的 DP+EP 混合并行架构 | Part 6 Finding 2 |
+| **Weight Sync** | - | RL 训练后把新权重同步进 rollout engine（NCCL broadcast/CUDA IPC） | Part 19 §19.4.4 |
 | **Wujian** | 无剑 | 平头哥 SoC 平台，配套玄铁 RISC-V 处理器 | Part 15 §15.3.1 |
 
 ## X
@@ -208,6 +247,13 @@
 | 术语 | 英文全称 | 含义 | 所在 Part |
 |------|---------|------|----------|
 | **XuanTie** | 玄铁 | 平头哥 RISC-V 处理器系列 | Part 15 §15.3.1 |
+| **XLA** | Accelerated Linear Algebra | Google 线性代数编译器，JAX/TPU 底座 | Part 24 §24.2 |
+
+## Z
+
+| 术语 | 英文全称 | 含义 | 所在 Part |
+|------|---------|------|----------|
+| **ZeRO** | Zero Redundancy Optimizer | 优化器状态/梯度/权重三级分片消除 DP 冗余 | Part 23 §23.2 |
 
 ---
 
@@ -235,6 +281,10 @@
 - MLA → Part 2 §2.4.3
 - 量化 (FP8/AWQ/GPTQ) → Part 1 §1.5, Part 2 §2.7
 - 投机解码 → Part 1 §1.6.2, Part 2 §2.6
+- 压缩四件套 → Part 22
+- 训练系统 → Part 23
+- 编译器 / 算子 → Part 24
+- 多模态生成 / 检索 → Part 25
 
 ### 高级架构
 - PD 分离 → Part 2 §2.3
