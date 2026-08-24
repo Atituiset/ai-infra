@@ -45,7 +45,8 @@
 | **DRA** | Dynamic Resource Allocation | K8s 声明式、拓扑感知的设备分配框架，逐步取代 device plugin | Part 18 §18.2.2 |
 | **DP** | Data Parallelism | 数据并行 | Part 2 §2.2.4 |
 | **DP Attention** | Data Parallel Attention | vLLM 针对 MLA 的按请求分区 attention | Part 6 Finding 1-2 |
-| **dFlash** | draft-Flash | in-filling 式投机解码（SGLang 首创，vLLM 已移植） | Part 2 §2.6.3, Part 4 §4.6.3 |
+| **dFlash** | draft-Flash | in-filling 式块草稿：整块并行出 draft（SGLang 首创，vLLM 已移植） | Part 2 §2.6.4, Part 4 §4.6.3 |
+| **DSpark** | - | 半自回归草稿模型：dFlash 并行骨干 + 低秩 Markov 头注入块内依赖 | Part 2 §2.6.4, Part 4 §4.6.3 |
 | **D-LLM** | Diffusion LLM | 面向 LLaDA / SDAR 等扩散式 LLM 的推理调度 | Part 4 §4.10 |
 | **DSA** | DeepSeek Sparse Attention | DeepSeek V3.2 的分层稀疏注意力（Indexer + top-k 选择） | Part 2 §2.4.4, Part 4 §4.10 |
 

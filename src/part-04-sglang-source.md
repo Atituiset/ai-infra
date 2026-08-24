@@ -488,6 +488,10 @@ dFlash:      Target → 在 attention 中直接"填充" draft tokens
 ```
 
 > 演进：SGLang 最早实现（Part 4 源码），vLLM 后续在 V1 引擎中提供 `DFlashProposer`。两者在 mask token 处理和上下文 K/V 复用上思路一致，实现细节略有差异。
+>
+> **DSpark（半自回归增强版）**：Qwen3-DSpark 草稿模型在 dFlash 的并行骨干上叠加低秩 Markov 头，采样时逐位注入块内依赖（机制详解见 Part 2 §2.6.4）。vLLM 侧对应 `model_executor/models/qwen3_dspark.py`。
+>
+> **组合与零成本家族**：ngram（`cpp_ngram/` + `ngram_worker.py`）、投机解码 × PD 分离的编排（`speculative/eagle_disaggregation.py`）等机制对比与选型见 Part 2 §2.6.5。
 
 ---
 

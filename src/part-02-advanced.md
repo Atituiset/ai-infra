@@ -441,7 +441,10 @@ SGLang 在 `sglang/srt/managers/multimodal_processor.py` 和 `sglang/srt/multimo
 | **Eagle** | 小 decoder（1-2 层 Transformer） | 更准确、更快 |
 | **MTP (Multi-Token Prediction)** | 大模型自带的多 token 预测头（DeepSeek-V3）| 无需额外模型 |
 | **ngram** | n-gram 模式匹配 | 零额外计算 |
-| **dFlash (SGLang)** | 轻量 draft 模型 + Eagle | 延迟最优 |
+| **dFlash (SGLang)** | 并行块草稿（in-filling 式，见 §2.6.4） | 延迟最优 |
+| **DSpark / DSV4 系** | 半自回归：并行骨干 + Markov 头（见 §2.6.4） | dFlash 的精度增强版 |
+
+> **草稿架构演化线**：外挂小模型（Eagle/Medusa）→ 模型自带草稿头（MTP）→ 抛弃逐 token 自回归、整块并行出草稿（dFlash）→ 在并行块内补回依赖关系（DSpark）。§2.6.4 展开这条线。
 
 ### 2.6.2 Eagle 工作原理 ★
 
@@ -497,6 +500,79 @@ MTP Transformer:
 - MTP 不需要额外模型 → 零额外显存和参数 → **更好的成本效率**
 - MTP 的 draft 质量通常不如专门的 Eagle 模型 → **accept rate 可能更低**
 - DeepSeek-V3 的 MTP 在实践中达到 ~1.5-2x 的 decode 加速
+
+### 2.6.4 块草稿家族：dFlash 与 DSpark ☆→★
+
+Eagle/MTP 系的草稿都是**逐 token 自回归**的——draft 模型自己也要一个接一个地猜，猜 N 个 token 要跑 N 步。这条约束在 2025 年被两条新路线打破，合称"块草稿（block drafting）"。
+
+**dFlash（draft-Flash）：整块并行出草稿**
+
+```
+传统逐 token 草稿:   h₁ → token₁ → h₂ → token₂ → h₃ → token₃   （N 步串行）
+dFlash 整块草稿:     [h₁..h_N] → [token₁..token_N]              （1 步并行）
+```
+
+做法：把 draft tokens 以 in-filling（填充）方式直接塞进 target 的 attention 里——上下文 K/V 预计算好之后，整块 draft token 一次非因果前向并行产出。省掉了 draft 模型的独立串行 forward，延迟最优；代价是块内 token 互相"不知道对方是谁"，长块的接受率会衰减。
+
+源码定位：SGLang `sglang/srt/speculative/dflash_worker_v2.py` / `dflash_info_v2.py` / `triton_ops/dflash.py`；vLLM 已移植 `vllm/v1/spec_decode/dflash.py`（详见 Part 4 §4.6.3）。
+
+**DSpark：给并行块补回"块内依赖"**
+
+DSpark（Qwen3-DSpark，`vllm/model_executor/models/qwen3_dspark.py`）针对 dFlash 的短板做增强，属于**半自回归（semi-autoregressive）**设计：
+
+1. 并行骨干照旧一次出整块草稿（复用 DFlash 的 Qwen3 draft 栈）；
+2. 新增一个轻量 **Markov 头**（低秩 V×r / r×V 转移矩阵）：采样完第 i 个 token 后，把它的 embedding 投影成第 i+1 个位置的 logits 偏置——用 O(低秩) 的开销近似"上一个 token 影响下一个"的依赖；
+3. 左到右逐位采样时依赖链被注入，但主干计算仍是并行的。
+
+一句话对比三家：
+
+| | 出草稿方式 | 块内一致性 | 额外参数 |
+|---|-----------|-----------|---------|
+| Eagle/MTP | 逐步自回归 | 强 | 小模型 / 内置头 |
+| dFlash | 整块一次并行 | 弱（各猜各的） | 无 |
+| DSpark | 并行 + Markov 链式修正 | 中（低秩近似） | 极小（r 秩矩阵） |
+
+工程含义：DSpark/DSV4 系草稿模型需要引擎侧配套支持（vLLM `qwen3_dspark.py`、SGLang 对应 backend），选型时把它当作"draft 模型生态的一部分"评估，而不是独立的调度算法。
+
+### 2.6.5 零成本草稿与工程组合 ☆→★
+
+**① n-gram / Prompt Lookup：从上下文里抄答案**
+
+不训练任何模型，纯查表：
+
+```
+维护历史 token 序列的 n-gram 索引
+→ 当前最后几个 token 在历史中命中相同片段时
+→ 把历史中该片段的后续直接当作草稿（免费猜完）
+```
+
+- 适用负载：**模式重复度高**的场景——代码编辑（改一行）、RAG（引用原文）、多轮对话、翻译；
+- 局限：接受率完全取决于负载可预测性，自由创作场景接近无效；
+- 源码：SGLang `speculative/cpp_ngram/` + `ngram_worker.py`；vLLM `v1/spec_decode/ngram_proposer.py` 及 GPU 版 `ngram_proposer_gpu.py`。
+
+**② Suffix Decoding：为 Agent 负载定制的查表草稿**
+
+n-gram 只看当前请求的历史，Suffix Decoding 进一步建立**跨请求的"前缀→后缀"全局索引**——agent 场景里工具调用回显、模板化 JSON 输出等重复结构跨会话命中率很高。vLLM 侧 `v1/spec_decode/suffix_decoding.py`。
+
+**③ 树状草稿与验证**
+
+Medusa/Eagle 的草稿可以组织成树而非链：多头每步出 top-k 候选 → 按树展开 → **树注意力（tree attention）一次前向验证多条路径**。接受路径更长，但验证 FLOPs 也随树变大——本质是 accept length 与 verify 计算量的博弈，树宽需要按负载调。
+
+**④ 投机解码 × PD 分离**
+
+两者组合有个特有问题：draft 模型自己的 prefill（bootstrap）发生在 P 侧还是 D 侧？SGLang 的答案是纳入统一生命周期：`speculative/eagle_disaggregation.py` 把 Eagle 草稿的 prefill 编排进 PD 流程（bootstrap → KV transfer → decode）。实践建议：小 draft 的 prefill 通常留在 D 侧本地完成以省一次 KV 传输；先分别调通 PD 与 spec decode 再组合。
+
+**⑤ 选型决策表 ★**
+
+| 负载 | 推荐 | 理由 |
+|------|------|------|
+| 通用对话大流量 | MTP / Eagle | 接受率稳定，收益可预期 |
+| 代码编辑 / RAG / 翻译 | ngram / prompt lookup | 零模型零显存，重复模式白捡 |
+| Agent 工具循环 | suffix decoding + radix cache | 结构化重复跨会话复用 |
+| 极致延迟小 batch | dFlash / DSpark 块草稿 | 并行出草稿延迟最低 |
+| 大 batch 高吞吐 | 关闭或减少 draft 步数 | Finding 4：收益随 batch 衰减 |
+
+**Draft 选型三问**：① 模型有官方配套草稿吗（MTP 权重/Eagle 发布版）？② 显存预算装得下独立 draft 吗？③ 负载模式可预测吗（是 → ngram 免费拿收益）？
 
 ---
 
