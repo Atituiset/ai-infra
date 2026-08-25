@@ -19,8 +19,8 @@
 
 | 角色 | 推荐路径 |
 |------|----------|
-| **新人/转行** | Part 0 → Part 1 → Part 5 (面试题自检) |
-| **推理服务开发** | Part 1 → Part 2 → Part 3 (vLLM) 或 Part 4 (SGLang) |
+| **新人/转行** | Part 0 → Part 1 → Part 5 (面试题自检) → Part 26 L0-L1（动手） |
+| **推理服务开发** | Part 1 → Part 2 → Part 3 (vLLM) 或 Part 4 (SGLang) + Part 26 Track B/C |
 | **架构师/TL** | Part 0 → Part 2 (精读) → Part 3 + Part 4 (速览) |
 | **面试备战** | Part 5 (自检) → 按缺口回溯 Part 1-4 |
 | **源码贡献** | 直接跳到 Part 3 或 Part 4 的"源码阅读路线" |
@@ -78,6 +78,7 @@
 | 训练显存账 / ZeRO/FSDP / 万卡容错？ | Part 23 |
 | AI 编译器栈对比？算子怎么开发融合？ | Part 24 |
 | 扩散模型怎么 serving？向量检索 infra？ | Part 25 |
+| 想动手做实验/攒作品集？ | Part 26（L0-L12） |
 
 ---
 
@@ -109,6 +110,7 @@
 - [Part 23：训练 Infra 速览](part-23-training-infra.md)
 - [Part 24：AI 编译器与算子开发](part-24-compiler-operators.md)
 - [Part 25：多模态生成与检索服务](part-25-multimodal-retrieval.md)
+- [Part 26：动手实践手册（Lab Manual）](part-26-practice.md)
 
 ---
 

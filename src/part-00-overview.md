@@ -215,6 +215,7 @@ Response Out (streaming / non-streaming)
 | Part 23 | 训练 Infra 速览 | 训推平台工程师 |
 | Part 24 | AI 编译器与算子开发 | 引擎/内核研发工程师 |
 | Part 25 | 多模态生成与检索服务 | 多模态/RAG 平台工程师 |
+| Part 26 | 动手实践手册（12 个 Lab） | 所有读者、作品集 |
 
 ---
 

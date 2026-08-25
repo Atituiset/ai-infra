@@ -30,3 +30,4 @@
 - [Part 23：训练 Infra 速览 — 训推平台工程师的最小知识集](part-23-training-infra.md)
 - [Part 24：AI 编译器与算子开发](part-24-compiler-operators.md)
 - [Part 25：多模态生成与检索服务](part-25-multimodal-retrieval.md)
+- [Part 26：动手实践手册（Lab Manual）](part-26-practice.md)
