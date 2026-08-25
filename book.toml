@@ -9,6 +9,7 @@ default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/Atituiset/ai-infra"
 edit-url-template = "https://github.com/Atituiset/ai-infra/edit/master/{path}"
+additional-js = ["notes.js"]
 
 [build]
 create-missing = false
