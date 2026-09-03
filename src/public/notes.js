@@ -9,7 +9,10 @@
  * - 面板"⬇ 导出": 本页 Tab 导出当前页全部笔记为一个 Markdown 文件,
  *   全部 Tab 按页面分组导出全站笔记
  *
- * 移植自 computer-science 项目同款功能; 挂载: book.toml -> [output.html] additional-js
+ * 移植自 computer-science 项目同款功能
+ * 挂载方式: VitePress head 注入 (<script src="notes.js">), 静态资源位于 src/public/
+ * SPA 适配: 章节间跳转由 theme/index.ts 的 router.onAfterRouteChanged 回调
+ *           调用 window.__aiInfraNotes.onNavigate() 触发重锚定
  */
 (function () {
   'use strict';
@@ -18,7 +21,8 @@
   var GITHUB_REPO = 'Atituiset/ai-infra';
 
   function contentEl() {
-    return document.getElementById('content') || document.body;
+    // VitePress 正文容器为 .vp-doc; 保留原 mdBook #content 作为兜底
+    return document.querySelector('.vp-doc') || document.getElementById('content') || document.body;
   }
 
   function pageKey() {
@@ -516,7 +520,7 @@
     var panel = el('div', '');
     panel.id = 'cs-notes-panel';
     var head = el('div', 'cn-head',
-      '<b>学习笔记</b><span>' + pageTitle() + '</span>');
+      '<b>学习笔记</b><span id="cn-head-title">' + pageTitle() + '</span>');
     var btnAdd = el('button', 'cn-add', '+ 新笔记');
     btnAdd.addEventListener('click', function () { openPopover(state.path, null, null); });
     var btnExport = el('button', 'cn-export', '⬇ 导出');
@@ -569,7 +573,7 @@
     var pop = el('div', '');
     pop.id = 'cs-notes-pop';
     var popHead = el('div', 'cn-pop-head',
-      '<b>' + (pageTitle()) + '</b>');
+      '<b id="cn-pop-title">' + (pageTitle()) + '</b>');
     var popClose = el('button', '', '✕');
     popClose.title = '关闭';
     popClose.addEventListener('click', closePopover);
@@ -641,21 +645,56 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closePopover();
     });
+  }
 
-    // 页面加载完成后应用高亮 (等 KaTeX / Mermaid 渲染完)
-    function applyAfterLoad() {
-      setTimeout(function () { applyAllMarks(); }, 400);
-    }
-    if (document.readyState === 'complete') {
-      applyAfterLoad();
-    } else {
-      window.addEventListener('load', applyAfterLoad);
-    }
+  // ---------- SPA 路由适配 (VitePress) ----------
+  // 首次加载和每次客户端路由跳转都要走 onRouteEnter:
+  // 更新当前页 key / 标题, 并轮询等待正文渲染完成后重新锚定高亮。
+
+  var applyToken = 0;
+
+  function onRouteEnter() {
+    state.path = pageKey();
+    hideSelbar();
+    closePopover();
+
+    var headTitle = document.getElementById('cn-head-title');
+    if (headTitle) headTitle.textContent = pageTitle();
+    var popTitle = document.getElementById('cn-pop-title');
+    if (popTitle) popTitle.textContent = pageTitle();
+
+    var panel = document.getElementById('cs-notes-panel');
+    if (panel && panel.classList.contains('open')) render();
+
+    var token = ++applyToken;
+    (function tryApply(attempts) {
+      if (token !== applyToken) return; // 导航已又被切换, 放弃本次应用
+      var container = contentEl();
+      if (container && container !== document.body &&
+          (container.textContent || '').trim().length > 0) {
+        applyAllMarks();
+        return;
+      }
+      if (attempts > 0) setTimeout(function () { tryApply(attempts - 1); }, 150);
+    })(40);
+  }
+
+  function boot() {
+    init();
+    onRouteEnter();
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', boot);
   } else {
-    init();
+    boot();
   }
+
+  // VitePress theme 在路由跳转后回调这里 (见 .vitepress/theme/index.ts)
+  window.__aiInfraNotes = {
+    onNavigate: function () {
+      if (document.getElementById('cs-notes-root')) onRouteEnter();
+      else boot();
+    }
+  };
 })();

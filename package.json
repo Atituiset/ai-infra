@@ -1,0 +1,16 @@
+{
+  "name": "ai-infra-docs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI Infra 推理引擎知识全书 - 在线文档",
+  "scripts": {
+    "docs:dev": "vitepress dev src",
+    "docs:build": "vitepress build src",
+    "docs:preview": "vitepress preview src"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3",
+    "vue": "^3.5.13"
+  }
+}

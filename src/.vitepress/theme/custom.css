@@ -1,0 +1,30 @@
+/**
+ * 品牌色：与笔记组件 notes.js 的蓝色保持一致 (#2563eb)
+ */
+:root {
+  --vp-c-brand-1: #2563eb;
+  --vp-c-brand-2: #1d4ed8;
+  --vp-c-brand-3: #1e40af;
+  --vp-c-brand-soft: rgba(37, 99, 235, 0.14);
+
+  --vp-home-hero-name-color: #2563eb;
+
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: #fff;
+  --vp-button-brand-bg: #2563eb;
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-bg: #1d4ed8;
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-bg: #1e40af;
+}
+
+:root.dark {
+  --vp-c-brand-1: #3b82f6;
+  --vp-c-brand-2: #60a5fa;
+  --vp-c-brand-3: #93c5fd;
+  --vp-c-brand-soft: rgba(59, 130, 246, 0.16);
+}
+
+html {
+  scroll-behavior: smooth;
+}

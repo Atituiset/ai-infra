@@ -1,3 +1,7 @@
+---
+title: 关于本书
+---
+
 # AI Infra 推理引擎知识全书
 
 > **A comprehensive mbook on LLM inference infrastructure, covering fundamentals to vLLM/SGLang source-level analysis.**
@@ -129,26 +133,31 @@
 - 基于源码版本：vLLM V1 引擎开发主线、SGLang 最新主线、TensorRT-LLM 主线、llama.cpp 主线
 - Profile 岗位参考：`profile.md` — 训推平台及引擎研发主任工程师
 
-## 构建与部署（mdbook）
+## 构建与部署（VitePress）
 
-本书使用 [mdBook](https://github.com/rust-lang/mdBook) 管理，结构如下：
+本书使用 [VitePress](https://vitepress.dev/zh/) 构建，结构如下：
 
 ```
 docs/
-├── book.toml          # mdbook 配置
-├── src/               # 全部 Markdown 源文件
-│   ├── SUMMARY.md     # 目录（章节顺序）
-│   ├── README.md      # 首页
-│   └── part-*.md      # 各章节
-└── .github/workflows/ # GitHub Pages 自动部署
+├── package.json           # Node 依赖与脚本
+├── src/
+│   ├── index.md           # 首页（关于本书）
+│   ├── part-*.md          # 各章节
+│   ├── public/            # 静态资源（notes.js、favicon）
+│   └── .vitepress/
+│       ├── config.ts      # 站点配置（侧边栏/搜索/编辑链接）
+│       └── theme/         # 主题定制（品牌色、SPA 路由钩子）
+└── .github/workflows/     # GitHub Pages 自动部署
 ```
 
 **本地构建预览**：
 
 ```bash
 cd docs
-mdbook build          # 生成静态站点到 book/
-mdbook serve          # 本地预览 http://localhost:3000
+npm install
+npm run docs:dev        # 热更新预览 http://localhost:5173
+npm run docs:build      # 构建静态站点到 src/.vitepress/dist
+npm run docs:preview    # 预览构建产物
 ```
 
-**部署到 GitHub Pages**：推送到 GitHub 仓库的 `master` 分支后，`.github/workflows/deploy-mdbook.yml` 会自动构建并发布。首次使用需在仓库 Settings → Pages 中把 Source 设为 **GitHub Actions**，并将 `book.toml` 中的 `git-repository-url` / `edit-url-template` 改成实际仓库地址。
+**部署到 GitHub Pages**：推送到 `master` 分支后，`.github/workflows/deploy-docs.yml` 会自动构建并发布。仓库 Settings → Pages 的 Source 需设为 **GitHub Actions**。
