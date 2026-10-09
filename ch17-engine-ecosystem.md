@@ -1,11 +1,11 @@
-# 第10章 推理引擎生态深度对比
+# 第17章 推理引擎生态深度对比
 
 > **面向角色**：需要做技术选型的架构师、技术负责人  
 > **目标**：深入理解 vLLM、SGLang、TensorRT-LLM、TGI、LMDeploy 的差异与适用边界
 
 ---
 
-## 10.1 生态全景
+## 17.1 生态全景
 
 ```
 开源推理引擎谱系:
@@ -30,7 +30,7 @@
 
 ---
 
-## 10.2 vLLM
+## 17.2 vLLM
 
 ### 定位
 **通用型开源推理引擎**，社区最大、模型支持最广、生态最成熟。
@@ -69,7 +69,7 @@ python -m vllm.entrypoints.openai.api_server \
 
 ---
 
-## 10.3 SGLang
+## 17.3 SGLang
 
 ### 定位
 **高性能结构化推理引擎**，在吞吐和长 prompt 复用场景表现突出。
@@ -108,7 +108,7 @@ python -m sglang.launch_server \
 
 ---
 
-## 10.4 TensorRT-LLM
+## 17.4 TensorRT-LLM
 
 ### 定位
 **NVIDIA 官方闭源推理引擎**，追求极致性能，绑定 NVIDIA 生态。
@@ -149,7 +149,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.5 TGI (Text Generation Inference)
+## 17.5 TGI (Text Generation Inference)
 
 ### 定位
 **HuggingFace 生态的推理服务**，强调 HF 兼容性和特色功能。
@@ -176,7 +176,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.6 LMDeploy
+## 17.6 LMDeploy
 
 ### 定位
 **国产推理引擎**，TurboMind C++ runtime，强调低延迟和国产硬件兼容。
@@ -200,9 +200,9 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.7 边缘侧推理引擎 ★
+## 17.7 边缘侧推理引擎 ★
 
-边缘推理与云侧推理的约束差异巨大：内存以 MB/GB 计、功耗受限、工具链与芯片 BSP 强耦合、算子支持决定模型能否落地。本节把主流边缘框架按绑定关系分类，并给出与云侧引擎的选型边界。详细源码级分析见 **第16章**。
+边缘推理与云侧推理的约束差异巨大：内存以 MB/GB 计、功耗受限、工具链与芯片 BSP 强耦合、算子支持决定模型能否落地。本节把主流边缘框架按绑定关系分类，并给出与云侧引擎的选型边界。详细源码级分析见 **第15章**。
 
 ### 边缘框架分类
 
@@ -254,7 +254,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.8 横向对比矩阵
+## 17.8 横向对比矩阵
 
 | 维度 | vLLM | SGLang | TensorRT-LLM | TGI | LMDeploy |
 |------|------|--------|--------------|-----|----------|
@@ -271,7 +271,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.9 选型决策树
+## 17.9 选型决策树
 
 ```
 开始
@@ -297,7 +297,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.10 生产组合建议
+## 17.10 生产组合建议
 
 | 场景 | 推荐引擎 | 理由 |
 |------|---------|------|
@@ -310,7 +310,7 @@ trtllm-serve ./deepseek-v3-engine
 
 ---
 
-## 10.11 迁移成本
+## 17.11 迁移成本
 
 | 迁移方向 | 成本 | 主要工作 |
 |----------|------|---------|

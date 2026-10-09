@@ -47,7 +47,7 @@ Decode 阶段 (逐 token):
 - Prefill 需要**高算力**（大量 matmul 并行），A100 这类卡已经足够
 - Decode 需要**高内存带宽**（每次都要从 HBM 读全部权重），H100 的 HBM3e 优势明显
 
-这就是 **PD 分离（Prefill-Decode Disaggregation）** 的理论基础（详见 第2章）。
+这就是 **PD 分离（Prefill-Decode Disaggregation）** 的理论基础（详见 第3章）。
 
 ### 1.1.3 KV Cache 机制 ★
 
@@ -358,7 +358,7 @@ Step 3: 如果全部匹配 → 接受 → 等价于 1 步生成 3 个 token ← 
 - vLLM 实现：`vllm/v1/spec_decode/` — 支持 Eagle、Medusa、ngram、MTP（Multi-Token Prediction）
 - SGLang 实现：`sglang/srt/speculative/` — 支持 Eagle、dFlash、ngram
 
-（投机解码的深入分析见 第2章）
+（投机解码的深入分析见 第3章）
 
 ---
 

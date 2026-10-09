@@ -1,7 +1,7 @@
 # 第20章 技术编年史 — AI Infra 演进脉络
 
 > **面向角色**：所有读者；尤其适合技术叙事与架构判断  
-> **前置知识**：建议先读 第1章-4（知道"是什么"），再来理解"为什么是这个顺序"  
+> **前置知识**：建议先读第0~8章（知道"是什么"），再来理解"为什么是这个顺序"  
 > **目标**：把散落全书的技术放回时间轴，建立因果链——每一次范式跃迁都由"新瓶颈暴露"驱动。能讲清演进逻辑的人，比只会罗列名词的高一档
 
 ---
@@ -71,17 +71,17 @@ SGLang 起点（2024 初）是一个**前端 DSL**：用结构化程序表达 pr
 |------|------|----------|
 | **Splitwise** (Microsoft Research India) | ISCA 2024 | Phase splitting + 好put 分析；用 PCIe/NVLink/IB 做 KV 传输的硬件对比 |
 | **DistServe** (PKU+UCSD) | OSDI 2024 | 提出 **goodput** 双 SLO 目标函数；P/D 独立扩缩容 |
-| **Mooncake** (Moonshot AI) | FAST 2025 | **KV cache 为中心**的全局架构：KV 复用跨请求、全局调度器、RDMA 传输引擎（实测见 第6章 Finding 6）；Kimi 生产验证 |
+| **Mooncake** (Moonshot AI) | FAST 2025 | **KV cache 为中心**的全局架构：KV 复用跨请求、全局调度器、RDMA 传输引擎（实测见 第24章 Finding 6）；Kimi 生产验证 |
 
 此后 PD 分离从论文走进生产默认选项（TRT-LLM Dynamo、SGLang PD、llm-d），P:D 配比成为新的容量规划参数。
 
 ### 20.2.8 Wide-EP 与 MoE 大规模服务 (DeepSeek, 2025) ★
 
-DeepSeek-V3 技术报告附录公开了自家部署：prefill 集群 EP32、decode 集群 EP144，配 DP attention 解决 MLA 的 KV 重复问题（第6章 Finding 1/2）。SGLang/vLLM 社区在 2025 上半年将其工程化为可复现的 wide-EP 方案。这标志着**并行拓扑第一次由推理侧需求反向定义**（此前 TP/PP 都来自训练侧经验）。
+DeepSeek-V3 技术报告附录公开了自家部署：prefill 集群 EP32、decode 集群 EP144，配 DP attention 解决 MLA 的 KV 重复问题（第24章 Finding 1/2）。SGLang/vLLM 社区在 2025 上半年将其工程化为可复现的 wide-EP 方案。这标志着**并行拓扑第一次由推理侧需求反向定义**（此前 TP/PP 都来自训练侧经验）。
 
 ### 20.2.9 KV Pool 化与平台层崛起 (2025-2026) ☆→★
 
-KV cache 从"引擎内部实现细节"升级为**分布式一等公民资源**：LMCache/NIXL 抽象传输与存储，Dynamo 编排多引擎，llm-d 把 KV-aware 调度标准化进 K8s Gateway API。同时 agentic/RL 负载（第19章）成为流量主体，会话粘性、权重热更新、partial rollout 变成引擎必备 API。竞争重心明确上移到平台层——这就是 第18章 存在的理由。
+KV cache 从"引擎内部实现细节"升级为**分布式一等公民资源**：LMCache/NIXL 抽象传输与存储，Dynamo 编排多引擎，llm-d 把 KV-aware 调度标准化进 K8s Gateway API。同时 agentic/RL 负载（第19章）成为流量主体，会话粘性、权重热更新、partial rollout 变成引擎必备 API。竞争重心明确上移到平台层——这就是 第12章 存在的理由。
 
 ### 20.2.10 因果链小结
 
@@ -210,4 +210,4 @@ CUTLASS开源 cuBLAS/cuDNN Triton开源   FlashAttention  FA-2        FA-3/Flash
 
 > "这个问题的本质是 XX 瓶颈。它在 20XX 年由 YY 系统首先解决，思路是 ZZ；但到了 20XX 年，因为 workload 变成 WW，这个方案的新短板是……所以现在业界的做法是……我们团队在其中的取舍是……"
 
-→ 交叉复习：各技术的原理细节回对应章节；最新进展时效性声明见 第6章 §6.6。
+→ 交叉复习：各技术的原理细节回对应章节；最新进展时效性声明见 第24章 §24.6。

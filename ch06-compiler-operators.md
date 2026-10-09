@@ -1,12 +1,12 @@
-# 第24章 AI 编译器与算子开发
+# 第6章 AI 编译器与算子开发
 
 > **面向角色**：推理引擎/内核研发工程师、性能优化工程师  
-> **前置知识**：第7章（GPU/CUDA 基础）、第20章 §20.3（Kernel 栈编年史）  
+> **前置知识**：第2章（GPU/CUDA 基础）、第20章 §20.3（Kernel 栈编年史）  
 > **目标**：建立编译器的分层心智模型（Graph IR → Tensor/Schedule IR → 机器码），掌握主流栈的取舍与引擎集成方式；能按方法论独立开发、融合、验证一个算子
 
 ---
 
-## 24.0 时间发展线 ★
+## 6.0 时间发展线 ★
 
 ```
 2013        2017      2018       2019         2020          2022              2023              2024                    2025-
@@ -20,7 +20,7 @@
 
 ---
 
-## 24.1 为什么推理引擎需要编译器 ★
+## 6.1 为什么推理引擎需要编译器 ★
 
 手写 kernel 覆盖不了三个爆炸：
 
@@ -38,7 +38,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 
 ---
 
-## 24.2 主流栈对比 ★
+## 6.2 主流栈对比 ★
 
 | 栈 | 血统 | 强项 | 弱项 | LLM 推理角色 |
 |----|------|------|------|--------------|
@@ -52,7 +52,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 
 ---
 
-## 24.3 引擎中的编译实践：两条路线 ★
+## 6.3 引擎中的编译实践：两条路线 ★
 
 ### 路线 A：piecewise torch.compile + CUDA Graph（vLLM V1 默认）
 
@@ -71,9 +71,9 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 
 ---
 
-## 24.4 算子开发方法论 ★
+## 6.4 算子开发方法论 ★
 
-### 24.4.1 六步工作流
+### 6.4.1 六步工作流
 
 ```
 1. Profile 定位：Nsight Compute 找热点
@@ -90,7 +90,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
    （无 host sync / 无动态分配逃逸 / shape 固定化）
 ```
 
-### 24.4.2 CUDA Graph 兼容性（最容易踩的坑）
+### 6.4.2 CUDA Graph 兼容性（最容易踩的坑）
 
 - kernel 内禁止 `cudaMemcpy` D2H 同步、禁止依赖 CPU 分支；
 - 动态 shape 用 padding 到 bucket 或 max shape + mask；
@@ -98,7 +98,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 
 ---
 
-## 24.5 算子融合分类学 ★
+## 6.5 算子融合分类学 ★
 
 **收益判据一句话：融合省掉的是中间张量的 HBM 往返字节。** 所以：
 
@@ -115,7 +115,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 
 ---
 
-## 24.6 论文线汇总 ★
+## 6.6 论文线汇总 ★
 
 完整对照见 第21章 线 11/12，核心八篇：
 
@@ -132,7 +132,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 
 ---
 
-## 24.7 本章小结
+## 6.7 本章小结
 
 - 编译器三层心智模型：**Graph pass / Schedule+autotune / 后端 codegen**；
 - LLM serving 的工程答案是 piecewise compile + 专用 attention 库 + CUDA Graph 兜底；
@@ -147,4 +147,4 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 4. CUDA Graph 捕获对算子的约束有哪些？
 5. MoE 的 grouped GEMM 解决什么问题？
 
-→ 交叉复习：Kernel 栈历史 第20章 §20.3；FlashInfer/sgl-kernel 在引擎中的位置 第3章 §3.4 / 第4章。
+→ 交叉复习：Kernel 栈历史 第20章 §20.3；FlashInfer/sgl-kernel 在引擎中的位置 第7章 §7.4 / 第8章。

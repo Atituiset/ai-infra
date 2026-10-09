@@ -1,4 +1,4 @@
-# 第7章 GPU 架构与 CUDA 编程基础
+# 第2章 GPU 架构与 CUDA 编程基础
 
 > **面向角色**：需要理解推理性能瓶颈的工程师  
 > **目标**：补齐 AI Infra 工程师必须掌握的 GPU 硬件与 CUDA 基础  
@@ -6,9 +6,9 @@
 
 ---
 
-## 7.1 GPU 硬件基础 ★
+## 2.1 GPU 硬件基础 ★
 
-### 7.1.1 NVIDIA GPU 架构演进
+### 2.1.1 NVIDIA GPU 架构演进
 
 | 架构 | 代表型号 | 关键特性 | 年代 |
 |------|---------|---------|------|
@@ -17,7 +17,7 @@
 | Blackwell | B100/B200 | FP4, 2nd Gen Transformer Engine | 2024 |
 | Rubin | R100 | 下一代，2026 后 | 2025+ |
 
-### 7.1.2 GPU 核心组件
+### 2.1.2 GPU 核心组件
 
 ```
 ┌──────────────────────────────────────┐
@@ -40,7 +40,7 @@
 └──────────────────────────────────────┘
 ```
 
-### 7.1.3 关键性能指标 ★
+### 2.1.3 关键性能指标 ★
 
 | 指标 | H100 SXM | A100 SXM | 意义 |
 |------|----------|----------|------|
@@ -53,7 +53,7 @@
 
 **核心洞察**：LLM 推理 decode 阶段 FP16 算力利用率通常 <5%，因为瓶颈在 HBM 带宽，不在算力。
 
-### 7.1.4 内存层次与延迟
+### 2.1.4 内存层次与延迟
 
 ```
 寄存器 (Register):   ~1 cycle      ← 由编译器/线程自动管理
@@ -68,9 +68,9 @@ CPU DRAM:            ~10,000 cycles ← 通过 PCIe/NVLink
 
 ---
 
-## 7.2 CUDA 编程基础 ★
+## 2.2 CUDA 编程基础 ★
 
-### 7.2.1 Kernel / Grid / Block / Thread
+### 2.2.1 Kernel / Grid / Block / Thread
 
 ```
 Kernel: 在 GPU 上执行的函数
@@ -85,7 +85,7 @@ CUDA Thread Hierarchy:
     Block(1,1) → Thread(0..1023)
 ```
 
-### 7.2.2 重要 CUDA 概念
+### 2.2.2 重要 CUDA 概念
 
 | 概念 | 含义 | 考点关联 |
 |------|------|---------|
@@ -95,7 +95,7 @@ CUDA Thread Hierarchy:
 | **Occupancy** | 每个 SM 上活跃 warp 数 / 最大 warp 数 | 高 occupancy 隐藏延迟 |
 | **Latency Hiding** | 用足够多的 warp 掩盖内存延迟 | LLM kernel 优化核心 |
 
-### 7.2.3 一个极简 CUDA Kernel（概念）
+### 2.2.3 一个极简 CUDA Kernel（概念）
 
 ```cuda
 __global__ void add(float* a, float* b, float* c, int n) {
@@ -108,7 +108,7 @@ __global__ void add(float* a, float* b, float* c, int n) {
 // 启动: add<<<n/256, 256>>>(a, b, c, n);
 ```
 
-### 7.2.4 CUDA Kernel 调优方向
+### 2.2.4 CUDA Kernel 调优方向
 
 ```
 1. 内存访问模式
@@ -130,9 +130,9 @@ __global__ void add(float* a, float* b, float* c, int n) {
 
 ---
 
-## 7.3 推理性能调优 Checklist ★
+## 2.3 推理性能调优 Checklist ★
 
-### 7.3.1 延迟敏感场景
+### 2.3.1 延迟敏感场景
 
 ```
 □ 使用 FP8 / INT4 量化减少 HBM 读取
@@ -144,7 +144,7 @@ __global__ void add(float* a, float* b, float* c, int n) {
 □ 投机解码：Eagle / MTP / dFlash
 ```
 
-### 7.3.2 吞吐敏感场景
+### 2.3.2 吞吐敏感场景
 
 ```
 □ 最大化 batch size（直到 KV Cache 或 compute 饱和）
@@ -155,7 +155,7 @@ __global__ void add(float* a, float* b, float* c, int n) {
 □ 使用 FlashAttention-3 / FlashInfer 加速 attention
 ```
 
-### 7.3.3 成本敏感场景
+### 2.3.3 成本敏感场景
 
 ```
 □ 量化到 INT4（AWQ/GPTQ）降低单卡需求
@@ -167,7 +167,7 @@ __global__ void add(float* a, float* b, float* c, int n) {
 
 ---
 
-## 7.4 GPU/CUDA 高频自测题
+## 2.4 GPU/CUDA 高频自测题
 
 **Q: 为什么 LLM decode 阶段 GPU 算力利用率很低？**
 - 答：decode 是 memory-bound。每次 forward 读取全部权重，HBM 带宽成为瓶颈，算力等待数据。
@@ -186,7 +186,7 @@ __global__ void add(float* a, float* b, float* c, int n) {
 
 ---
 
-## 7.5 本章小结
+## 2.5 本章小结
 
 | 概念 | 一句话总结 |
 |------|-----------|

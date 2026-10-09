@@ -1,14 +1,14 @@
-# 第16章 边缘推理框架与软件栈
+# 第15章 边缘推理框架与软件栈
 
 > **面向角色**：边缘 AI 推理优化工程师、框架适配工程师、端侧部署工程师  
-> **前置知识**：第15章 边缘硬件约束、基本量化概念、LLM 推理流程  
+> **前置知识**：第14章 边缘硬件约束、基本量化概念、LLM 推理流程  
 > **目标**：掌握主流边缘推理框架的定位、用法和关键源码结构，能够在 Jetson、手机 NPU、RISC-V 等平台上完成模型转换与运行时调优
 
 ---
 
-## 16.1 边缘框架全景
+## 15.1 边缘框架全景
 
-### 16.1.1 边缘推理框架的分类
+### 15.1.1 边缘推理框架的分类
 
 与云侧相对统一的 CUDA / PyTorch / vLLM 生态不同，边缘侧的推理框架呈现明显的"垂直化"特征：芯片厂商为了发挥自家 NPU 的峰值算力，往往会提供一套从模型转换到运行时调度的私有工具链。按照开放程度和硬件绑定关系，可以把主流边缘框架分为三类：
 
@@ -20,7 +20,7 @@
 
 **关键洞察**：边缘框架选型的核心不是"哪个框架最快"，而是**目标平台是否支持、模型是否能跑通、工具链是否成熟**。一个闭源但能在目标 NPU 上跑通的 SDK，往往比一个开源但算子支持缺失的框架更有工程价值。
 
-### 16.1.2 与云侧引擎的关系
+### 15.1.2 与云侧引擎的关系
 
 云侧推理引擎（vLLM、SGLang、TensorRT-LLM）和边缘推理框架并非完全割裂，它们在技术栈上有明显的继承关系：
 
@@ -43,7 +43,7 @@ PyTorch / ONNX / HuggingFace
                               边缘运行时（Jetson / 手机 NPU / RISC-V / ARM）
 ```
 
-### 16.1.3 框架选型矩阵 ★
+### 15.1.3 框架选型矩阵 ★
 
 | 框架 | 主要硬件 | 量化支持 | 易用性 | 性能天花板 | 生态/社区 | 最佳场景 |
 |------|---------|---------|--------|-----------|----------|---------|
@@ -67,9 +67,9 @@ PyTorch / ONNX / HuggingFace
 
 ---
 
-## 16.2 TensorRT / TensorRT-LLM 源码级分析 ★
+## 15.2 TensorRT / TensorRT-LLM 源码级分析 ★
 
-### 16.2.1 仓库布局
+### 15.2.1 仓库布局
 
 TensorRT-LLM 是 NVIDIA 面向 LLM 推理的优化框架，核心定位是**把 HuggingFace 模型编译成 TensorRT engine，并在 NVIDIA GPU / Jetson 上以低延迟运行**。仓库主要分为三层：
 
@@ -81,7 +81,7 @@ TensorRT-LLM 是 NVIDIA 面向 LLM 推理的优化框架，核心定位是**把 
 
 > 注：根据 NVIDIA 主线最新规划，`backend="tensorrt"`（即传统 engine build 路径）被标记为 legacy，新特性主要投向 PyTorch / AutoDeploy 后端；但在 Jetson 和边缘低延迟场景中，TensorRT engine 路径仍是当前主流。
 
-### 16.2.2 Builder 路径：从 HuggingFace 到 engine ★
+### 15.2.2 Builder 路径：从 HuggingFace 到 engine ★
 
 **`TensorRT-LLM/tensorrt_llm/builder.py`** 是 engine 编译的 Python 入口。核心类 `Builder` 封装了 `nvinfer1.Builder`，负责创建 `Network`、`BuilderConfig` 并最终调用 `build_engine`。
 
@@ -138,7 +138,7 @@ trllm-build CLI 调用 build()  →  serialized TensorRT engine
 Executor 加载 engine，运行推理
 ```
 
-### 16.2.3 Runtime / Executor ★
+### 15.2.3 Runtime / Executor ★
 
 **`TensorRT-LLM/cpp/include/tensorrt_llm/executor/executor.h`** 定义了 C++ 侧的对外 API。核心类 `Executor` 是用户请求的入口，提供 request 入队、response 等待、统计信息导出等能力。
 
@@ -177,7 +177,7 @@ std::vector<Response> Executor::awaitResponses(
 
 真正的调度逻辑在 `ExecutorImpl`、以及 `BatchManager` / `Scheduler` / `KVCacheManager` 中协同完成。Python 层的 `GenerationExecutor`（`tensorrt_llm/executor/executor.py`）通过 nanobind 绑定到这套 C++ core。
 
-### 16.2.4 In-flight Batching / KV Cache Manager ★
+### 15.2.4 In-flight Batching / KV Cache Manager ★
 
 TensorRT-LLM 的调度系统由 `BatchManager` 统一负责，其中 `capacityScheduler` 决定**哪些请求进入当前 batch**，`microBatchScheduler` 负责**chunked prefill 的 token 切分**，`kvCacheManager` 负责**物理 KV Cache 分配与复用**。
 
@@ -217,7 +217,7 @@ struct PoolConfiguration {
 - `ContextChunkingPolicy::kFIRST_COME_FIRST_SERVED`：按请求顺序贪婪分配剩余算力预算。
 - `reuse_adjusted_compute()`：对可复用的 KV Cache 前缀，计算实际需 forward 的 token 数，避免重复计算。
 
-### 16.2.5 Plugin 机制 ★
+### 15.2.5 Plugin 机制 ★
 
 TensorRT-LLM 的大量性能来自**自定义 TensorRT plugin**，尤其是 attention、quantization、MoE、speculative decoding 等算子。
 
@@ -284,7 +284,7 @@ public:
 };
 ```
 
-### 16.2.6 Jetson 部署路径与命令
+### 15.2.6 Jetson 部署路径与命令
 
 在 Jetson 上部署 TensorRT-LLM 的典型路径如下：
 
@@ -337,7 +337,7 @@ python -c "from tensorrt_llm import LLM; llm = LLM(model='./llama2_7b_engine'); 
 - 尽量使用 `gemm_plugin`、`gpt_attention_plugin` 等插件，避免 TensorRT 原生算子 fallback。
 - 如果显存仍不足，可尝试 `--weight_streaming` 或 `--remove_input_padding`。
 
-### 16.2.7 源码阅读路线图
+### 15.2.7 源码阅读路线图
 
 按以下顺序阅读 TensorRT-LLM 源码，可快速建立从 build 到 runtime 的完整认知：
 
@@ -372,9 +372,9 @@ Step 6: Plugin 与 Kernel
 
 ---
 
-## 16.3 llama.cpp 源码级分析 ★
+## 15.3 llama.cpp 源码级分析 ★
 
-### 16.3.1 仓库布局
+### 15.3.1 仓库布局
 
 llama.cpp 是社区最活跃的端侧 LLM 推理框架之一，核心特点是**纯 C/C++、跨平台、GGUF 量化生态、多后端调度**。仓库主要结构如下：
 
@@ -387,7 +387,7 @@ llama.cpp 是社区最活跃的端侧 LLM 推理框架之一，核心特点是**
 | `common/` | 公共 CLI 工具代码 | `common.cpp`、`sampling.cpp` |
 | `models/` | 部分模型下载与测试脚本 | - |
 
-### 16.3.2 GGUF 格式与量化 ★
+### 15.3.2 GGUF 格式与量化 ★
 
 **GGUF（Georgi Gerganov Universal Format）** 是 llama.cpp 自研的二进制模型格式，替代了早期的 GGML 格式。它把模型元数据（hyperparameters、tokenizer、rope 参数等）和权重张量统一存储在一个文件中，并支持按张量选择不同的数据类型。
 
@@ -470,7 +470,7 @@ python llama.cpp/convert_hf_to_gguf.py \
 ./llama-quantize ./llama-2-7b-f16.gguf ./llama-2-7b-iq4_xs.gguf IQ4_XS imatrix.dat
 ```
 
-### 16.3.3 KV Cache 管理 ★
+### 15.3.3 KV Cache 管理 ★
 
 llama.cpp 的 KV Cache 由 `llama_kv_cache` 类管理，位于 **`llama.cpp/src/llama-kv-cache.h/.cpp`**。它实现了页式/槽式缓存、序列操作（删除/复制/移动/保留）、连续与非连续槽位查找等。
 
@@ -485,7 +485,7 @@ llama.cpp 的 KV Cache 由 `llama_kv_cache` 类管理，位于 **`llama.cpp/src/
 
 **滑动窗口注意力（SWA）** 由 **`llama.cpp/src/llama-kv-cache-iswa.h/.cpp`** 处理。它维护了两个 `llama_kv_cache` 实例：一个给非 SWA 层，一个给 SWA 层，并通过 `llama_kv_cache_iswa` 对外暴露统一的 `llama_memory_i` 接口，提供 `get_base()` 和 `get_swa()` 分别访问两套缓存。
 
-### 16.3.4 模型加载 ★
+### 15.3.4 模型加载 ★
 
 **`llama.cpp/src/llama-model-loader.h/.cpp`** 负责从 GGUF 文件读取元数据、创建张量、加载权重。核心结构 `llama_model_loader` 包含 `llama_tensor_weight`（`idx` 源文件索引、`offs` 文件偏移、`tensor` 指针）、`weights_map`（按层排序的权重表）、`load_all_data()`（支持 mmap 与 direct I/O 加载）、`get_weight()` / `require_weight()` 等。
 
@@ -508,7 +508,7 @@ LLAMA_API struct llama_context * llama_init_from_model(
     struct llama_context_params params);
 ```
 
-### 16.3.5 Sampling ★
+### 15.3.5 Sampling ★
 
 llama.cpp 的采样系统分为两层：
 
@@ -521,7 +521,7 @@ llama.cpp 的采样系统分为两层：
 
 **语法约束**（`llama.cpp/src/llama-grammar.cpp`）：llama.cpp 使用类 GBNF（Gerganov BNF）格式定义输出约束，解析器会逐 token 判断候选是否满足语法。源码中实现了 UTF-8 解码、hex 解析、name/number/char 解析等基础工具函数。
 
-### 16.3.6 多后端调度 ★
+### 15.3.6 多后端调度 ★
 
 llama.cpp 的跨平台能力来自 **GGML backend 抽象层**。`ggml_backend` 负责 buffer 分配、张量拷贝、算子执行；不同硬件（CUDA、Metal、Vulkan、OpenCL、SYCL、CANN 等）各自实现 backend。
 
@@ -531,7 +531,7 @@ llama.cpp 的跨平台能力来自 **GGML backend 抽象层**。`ggml_backend` �
 
 llama.cpp 在构建计算图时，会根据每个算子的 `backend_supports_op` 结果，把张量分配到合适的 backend；不支持的算子自动回退到 CPU。用户可以通过 `LLAMA_CUDA_VISIBLE_DEVICES`、`GGML_VK_VISIBLE_DEVICES` 等环境变量控制后端选择。
 
-### 16.3.7 典型命令与源码阅读路线图
+### 15.3.7 典型命令与源码阅读路线图
 
 **常用命令**：
 
@@ -589,9 +589,9 @@ Step 7: CLI 入口
 
 ---
 
-## 16.4 MNN（平头哥/阿里生态）★★
+## 15.4 MNN（平头哥/阿里生态）★★
 
-### 16.4.1 架构：Converter / Interpreter / Backend
+### 15.4.1 架构：Converter / Interpreter / Backend
 
 MNN 是阿里巴巴开源的轻量级深度学习推理框架，定位与 TensorFlow Lite、ONNX Runtime Mobile 类似，但在**阿里/平头哥生态、ARM/RISC-V 后端、端侧模型压缩**上有独特优势。其核心架构分为三层：
 
@@ -627,7 +627,7 @@ MNN 是阿里巴巴开源的轻量级深度学习推理框架，定位与 Tensor
 | **Python API** | `pymnn/` | Python 绑定与工具 |
 | **LLM Runtime** | `transformers/` | 大模型/扩散模型运行时 |
 
-### 16.4.2 量化与混合精度
+### 15.4.2 量化与混合精度
 
 MNN 提供离线量化工具链，支持对称/非对称量化、per-channel / per-tensor、INT8 / FP16 混合精度。关键流程：
 
@@ -650,7 +650,7 @@ python -m MNN.tools.mnnquant \
   --config config.json
 ```
 
-### 16.4.3 RISC-V / NPU backend
+### 15.4.3 RISC-V / NPU backend
 
 MNN 对平头哥玄铁 RISC-V 和端侧 NPU 有较好的支持。后端抽象使得接入新硬件 NPU 时，只需要在 `source/backend/` 下实现：
 
@@ -660,7 +660,7 @@ MNN 对平头哥玄铁 RISC-V 和端侧 NPU 有较好的支持。后端抽象使
 
 玄铁 RISC-V 后端通常利用 RVV（RISC-V Vector）扩展做向量化，NPU 后端则把支持的子图下放到芯片驱动执行，不支持的子图回退到 CPU。
 
-### 16.4.4 源码阅读路线
+### 15.4.4 源码阅读路线
 
 ```
 Step 1: 模型格式
@@ -687,9 +687,9 @@ Step 5: 平头哥/玄铁相关后端
 
 ---
 
-## 16.5 其他框架 overview
+## 15.5 其他框架 overview
 
-### 16.5.1 ONNX Runtime / ONNX Runtime GenAI
+### 15.5.1 ONNX Runtime / ONNX Runtime GenAI
 
 **ONNX Runtime（ORT）** 是微软开源的跨平台推理引擎，通过 **Execution Provider（EP）** 接入不同硬件：CPU、CUDA、TensorRT、DirectML、OpenVINO、QNN、CoreML、Rockchip NPU 等。ORT 在边缘场景的优势是模型格式通用（ONNX）、工具链成熟、社区庞大。
 
@@ -711,7 +711,7 @@ tokens = model.generate("Hello,")
 
 **适用场景**：需要一次开发、多硬件部署；已经在 ONNX 生态中的 CV/NLP 模型。
 
-### 16.5.2 OpenVINO / OpenVINO GenAI
+### 15.5.2 OpenVINO / OpenVINO GenAI
 
 **OpenVINO** 是 Intel 推出的推理优化工具包，支持 Intel CPU / GPU / NPU，也支持 ARM 等第三方硬件。它通过模型优化（MO / OVC）把 PyTorch / ONNX / TensorFlow 转换为 IR（Intermediate Representation），并在运行时做图优化、量化、算子融合。
 
@@ -730,7 +730,7 @@ optimum-cli export openvino \
 
 **适用场景**：Intel AIPC、工业边缘网关、需要利用 Intel NPU 低功耗特性的场景。
 
-### 16.5.3 Qualcomm QNN
+### 15.5.3 Qualcomm QNN
 
 **Qualcomm Neural Network（QNN）SDK** 是高通为 Hexagon NPU / DSP / GPU 提供的专用推理栈。它把模型转换为 `.dlc`（Deep Learning Container），并通过 QNN runtime 在 Snapdragon 手机、车载平台、XR 设备上运行。
 
@@ -755,7 +755,7 @@ qnn-net-run --model model_int8.dlc --backend libQnnHtp.so
 
 **适用场景**：Snapdragon 手机/平板、Snapdragon Ride 车载、XR 眼镜等高通平台。
 
-### 16.5.4 Rockchip RKNN / RKNN-LLM
+### 15.5.4 Rockchip RKNN / RKNN-LLM
 
 **RKNN** 是瑞芯微为其 NPU 提供的模型转换与运行时工具链。RKNN Toolkit2 支持 PyTorch / ONNX / TensorFlow / TFLite 到 `.rknn` 的转换，支持 INT8 / FP16 量化。
 
@@ -780,7 +780,7 @@ rkllm-build --model_path ./Llama-2-7b-hf \
 
 **适用场景**：低成本边缘盒子、智能摄像头、NVR、教育平板、小型机器人。
 
-### 16.5.5 MLC-LLM
+### 15.5.5 MLC-LLM
 
 **MLC-LLM** 是 CMU / OctoML 等社区推动的端侧 LLM 编译部署框架，基于 Apache TVM。它的核心思想是**把 LLM 编译成针对目标硬件的高效 runtime**，支持 CUDA、Metal、Vulkan、OpenCL、ROCm 以及多种 NPU。
 
@@ -794,7 +794,7 @@ mlc_llm serve dist/Llama-2-7b-hf-q4f16_1-MLC --port 8080
 
 **适用场景**：需要把 LLM 编译到手机 GPU / NPU 上，追求极致 kernel 优化；研究属性强。
 
-### 16.5.6 ExecuTorch
+### 15.5.6 ExecuTorch
 
 **ExecuTorch** 是 Meta 推出的 PyTorch 端侧推理解决方案，目标是让 PyTorch 模型能够直接部署到手机、AR/VR、IoT 设备。它通过 `torch.export` 捕获计算图，再经过 lowering、量化、编译，生成在目标设备上运行的 `.pte` 文件。
 
@@ -808,7 +808,7 @@ python -m examples.portable.scripts.export --model_name=llama2
 
 **适用场景**：已经在 PyTorch 生态中的移动端/可穿戴设备模型；希望用同一套 PyTorch 工具链完成训练到部署。
 
-### 16.5.7 TensorFlow Lite / LiteRT
+### 15.5.7 TensorFlow Lite / LiteRT
 
 **TensorFlow Lite（TFLite）** 是 Google 的端侧推理框架，社区和生态最为广泛。2024 年起 Google 将 TFLite 改名为 **LiteRT**，但文件格式和 API 基本保持一致。LiteRT 支持 ARM CPU、GPU delegate、Edge TPU、Hexagon DSP、Apple Neural Engine 等。
 
@@ -831,9 +831,9 @@ interpreter = tf.lite.Interpreter(
 
 ---
 
-## 16.6 框架选型决策树
+## 15.6 框架选型决策树
 
-### 16.6.1 核心权衡维度
+### 15.6.1 核心权衡维度
 
 边缘框架选型需要在四个维度上做权衡：
 
@@ -844,7 +844,7 @@ interpreter = tf.lite.Interpreter(
 | **模型类型** | CNN / Transformer / LLM / 多模态？ | 不同框架对不同结构的优化程度差异巨大 |
 | **工程成熟度** | 是否有现成工具链、示例、社区支持？ | 直接影响落地周期和长期维护成本 |
 
-### 16.6.2 决策树
+### 15.6.2 决策树
 
 ```
 开始
@@ -882,7 +882,7 @@ interpreter = tf.lite.Interpreter(
   └── 默认选择 → ONNX Runtime / TensorFlow Lite（生态最广、文档最丰富）
 ```
 
-### 16.6.3 典型场景推荐
+### 15.6.3 典型场景推荐
 
 | 场景 | 推荐框架 | 理由 |
 |------|---------|------|
@@ -894,7 +894,7 @@ interpreter = tf.lite.Interpreter(
 | **跨硬件快速原型** | ONNX Runtime GenAI | 一次 ONNX，多 EP 切换 |
 | **已有 PyTorch 移动端模型** | ExecuTorch / LiteRT | 与训练生态无缝衔接 |
 
-### 16.6.4 常见误区
+### 15.6.4 常见误区
 
 1. **误区一：认为开源框架一定比厂商 SDK 好**。厂商 SDK 通常对自家 NPU 的算子支持和内存排布做了深度优化，开源框架反而可能因为 fallback 导致性能大跌。
 2. **误区二：只看模型转换成功，不看 runtime 性能**。很多框架能转换模型，但实际运行时大量算子落在 CPU，导致延迟不可接受。
@@ -904,9 +904,9 @@ interpreter = tf.lite.Interpreter(
 
 ---
 
-## 16.7 小结与高频考点
+## 15.7 小结与高频考点
 
-### 16.7.1 关键结论
+### 15.7.1 关键结论
 
 - **边缘框架的核心矛盾是兼容性 vs 性能**：跨平台框架易用但可能无法发挥 NPU 峰值性能；厂商 SDK 性能高但锁定生态。
 - **TensorRT-LLM 的 engine 路径仍是 NVIDIA 边缘的最优解**，Builder / Executor / KVCacheManager / GPTAttentionPlugin 是其四大核心。
@@ -914,7 +914,7 @@ interpreter = tf.lite.Interpreter(
 - **MNN 在阿里/平头哥生态中有独特价值**，Converter / Interpreter / Backend 三层架构与 RISC-V/NPU 后端值得关注。
 - **框架选型必须先定硬件**，再考虑量化、算子支持、工具链成熟度，最后才是延迟/吞吐优化。
 
-### 16.7.2 高频考点 ★
+### 15.7.2 高频考点 ★
 
 1. **TensorRT-LLM 的 build 流程是什么？**  
    答：`commands/build.py` 解析参数 → `builder.py` 创建 `Network` 和 `BuilderConfig` → 调用 `Builder.build_engine` 生成序列化 engine → `Executor` 加载运行。
@@ -940,10 +940,10 @@ interpreter = tf.lite.Interpreter(
 8. **如何为高通平台选择框架？**  
    答：优先 QNN，次选 ONNX Runtime + QNN EP；复杂 custom op 需要评估 CPU fallback 成本。
 
-### 16.7.3 延伸阅读建议
+### 15.7.3 延伸阅读建议
 
-- 本书 第15章：复习边缘硬件约束与选型矩阵。
-- 本书 第17章：学习边缘 KV Cache 压缩、模型轻量化、VLM 部署等实战优化。
+- 本书 第14章：复习边缘硬件约束与选型矩阵。
+- 本书 第16章：学习边缘 KV Cache 压缩、模型轻量化、VLM 部署等实战优化。
 - TensorRT-LLM 官方文档：`docs/source/deployment-guide/`、`docs/source/features/kvcache.md`。
 - llama.cpp 官方文档：`docs/backend/`（各后端说明）、`docs/multi-gpu.md`、`gguf-py/README.md`。
 - MNN 官方仓库：https://github.com/alibaba/MNN

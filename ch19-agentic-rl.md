@@ -1,7 +1,7 @@
 # 第19章 Agentic 与 RL 时代的推理负载
 
 > **面向角色**：推理平台架构师、RL Infra 工程师、推理引擎研发  
-> **前置知识**：第1章（KV Cache / 指标）、第2章（调度 / 投机解码）、第18章（网关与路由）  
+> **前置知识**：第1章（KV Cache / 指标）、第3章（调度 / 投机解码）、第12章（网关与路由）  
 > **目标**：理解 2024-2026 年 workload 的三次变迁（Chat → RAG → Agent/Reasoning）如何重构推理基础设施的设计假设；掌握 RL post-training 基础设施（rollout engine + weight sync）这一 SGLang/vLLM 社区最大的增量场景
 
 ---
@@ -23,7 +23,7 @@
 **核心结论**：
 1. decode 成为主体 → 引擎重心从 prefill 吞吐转向大 batch decode 效率（overlap 调度、投机解码回归）；
 2. prefix reuse 从"锦上添花"变成**成本结构的决定项**；
-3. 状态从请求级升级为会话级 → 路由、缓存、容错的所有假设都要重写（第18章 §18.3.3）。
+3. 状态从请求级升级为会话级 → 路由、缓存、容错的所有假设都要重写（第12章 §12.3.3）。
 
 ---
 
@@ -45,9 +45,9 @@ reasoning：   prompt 2k → thinking 8k+ → output 1k
 
 1. **decode-bound 化**：集群算力预算从 prefill 向 decode 倾斜；PD 分离的 P:D 配比要重新调（D 侧需求上升）；
 2. **并行采样（n>1）成常态**：best-of-N / self-consistency 让同一 prompt 的 N 个 decode 共享 KV → radix/prefix 复用价值放大，n-way 并行是引擎必答题；
-3. **投机解码价值回归**：输出越长，speculative decoding 的绝对收益越大。EAGLE-3、MTP（DeepSeek 原生 MTP 权重）成为 reasoning 负载的标配（衰减数据见 第6章 Finding 4——收益随 batch size 下降，需按负载实测）;
+3. **投机解码价值回归**：输出越长，speculative decoding 的绝对收益越大。EAGLE-3、MTP（DeepSeek 原生 MTP 权重）成为 reasoning 负载的标配（衰减数据见 第24章 Finding 4——收益随 batch size 下降，需按负载实测）;
 4. **Thinking budget 控制**：Qwen3 等 model family 引入可开关/限长的思考模式——本质是把"算力换质量"的旋钮暴露给应用层，网关需要按租户/场景路由到不同 budget 配置；
-5. **成本结构**：单请求 token 消耗上升 1-2 个数量级 → 第13章 的 ROI 模型中，KV cache 命中率与稀疏注意力（NSA/DSA，第2章 §2.4.4）从优化项升级为盈亏线。
+5. **成本结构**：单请求 token 消耗上升 1-2 个数量级 → 第10章 的 ROI 模型中，KV cache 命中率与稀疏注意力（NSA/DSA，第3章 §3.4.4）从优化项升级为盈亏线。
 
 ---
 
@@ -68,14 +68,14 @@ turn 30: [... 全部历史 ...]              → final answer
 
 ### 19.3.2 三层应对
 
-**① Session Affinity / Sticky Routing**（网关层，见 第18章 §18.3.3）
+**① Session Affinity / Sticky Routing**（网关层，见 第12章 §12.3.3）
 - 按 session id 一致性哈希到引擎副本；
 - 权衡：粘性导致负载倾斜（长会话副本越来越重），需要 cache-aware 与 least-load 混合策略，并设置粘性 TTL。
 
 **② 会话暂停与恢复**（引擎层）
 - 工具执行期间（秒级~分钟级），会话的 KV 占着显存等结果——高并发下这是最贵的闲置；
 - vLLM sleep mode（`sleep()` 卸载权重/KV、`wake_up()` 恢复）最初为 RL rollout 内存相位切换设计，同样适用于 agent 场景的低峰回收；
-- 更精细的做法：把不活跃会话的 KV offload 到 CPU/SSD（HiCache/LMCache 分层，第2章 §2.3.4），活跃会话留在 HBM。
+- 更精细的做法：把不活跃会话的 KV offload 到 CPU/SSD（HiCache/LMCache 分层，第3章 §3.3.4），活跃会话留在 HBM。
 
 **③ KV 生命周期的语义升级**
 - 缓存条目从「请求结束即弃」变为「会话结束才弃」→ 需要 session 级 TTL 与显式失效 API；
@@ -168,7 +168,7 @@ SGLang 对应 API：`update_weights_from_tensor`（进程内/IPC）、`update_we
 
 - RL 集群的 GPU 时间典型分布：rollout 占比常超过 50%，且随 agent 化继续上升；
 - 在线 serving 与 RL rollout 混池：白天保在线 SLA、夜间/低峰跑 rollout，或用 MIG/partition 隔离小规模 rollout；
-- 与 第13章 的 ROI 模型衔接：RL 后训练的成本核算单位应从"GPU 时"改为"每条轨迹的 rollout token 成本"。
+- 与 第10章 的 ROI 模型衔接：RL 后训练的成本核算单位应从"GPU 时"改为"每条轨迹的 rollout token 成本"。
 
 ---
 
@@ -178,7 +178,7 @@ SGLang 对应 API：`update_weights_from_tensor`（进程内/IPC）、`update_we
 
 - 三原语：Tools（模型可调用）、Resources（可读取上下文）、Prompts（模板）；
 - Transport：本地 stdio / 远程 Streamable HTTP（替代早期 HTTP+SSE 方案）；
-- **对推理 infra 的意义**：工具生态标准化 → agent 会话的工具调用次数进一步暴增 → 服务端会话保持、流式部分 JSON（第18章 §18.5.2）、工具结果注入上下文的 token 计量，全部成为网关/引擎的一等需求。
+- **对推理 infra 的意义**：工具生态标准化 → agent 会话的工具调用次数进一步暴增 → 服务端会话保持、流式部分 JSON（第12章 §12.5.2）、工具结果注入上下文的 token 计量，全部成为网关/引擎的一等需求。
 
 与 OpenAI function calling 的关系：MCP 解决"工具从哪来"（生态协议），function calling 解决"工具怎么调"（模型输出格式），二者正交且正在融合（各家已支持 MCP 工具直连）。
 
@@ -205,4 +205,4 @@ SGLang 对应 API：`update_weights_from_tensor`（进程内/IPC）、`update_we
 5. Collocated vs disaggregated RL 的内存相位切换怎么实现？（sleep/wake up）
 6. MCP 改变了推理服务的哪些假设？
 
-→ 交叉复习：投机解码衰减数据 第6章 Finding 4；HiCache 分层 第2章 §2.3.4；sticky routing 第18章 §18.3.3。
+→ 交叉复习：投机解码衰减数据 第24章 Finding 4；HiCache 分层 第3章 §3.3.4；sticky routing 第12章 §12.3.3。

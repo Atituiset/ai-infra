@@ -1,16 +1,16 @@
-# 第17章 边缘场景优化与落地
+# 第16章 边缘场景优化与落地
 
 > **面向角色**：边缘 AI 推理优化工程师、量产交付工程师
-> **前置知识**：第15章 硬件约束、第16章 框架、第1章/2 KV Cache 与量化基础
+> **前置知识**：第14章 硬件约束、第15章 框架、第1章/2 KV Cache 与量化基础
 > **目标**：掌握边缘场景下的性能优化、精度保障和问题排查方法
 
 ---
 
-## 17.1 内存受限下的 KV Cache 管理 ★
+## 16.1 内存受限下的 KV Cache 管理 ★
 
 边缘设备的内存是共享的：CPU、GPU/NPU 共用同一颗 LPDDR5/DDR5，没有独立的 HBM。对于 LLM 来说，**权重**只占内存的一部分，**KV Cache** 在长序列下会迅速膨胀，成为真正的瓶颈。本节讨论边缘场景下压缩和管理 KV Cache 的核心技术。
 
-### 17.1.1 KV Cache 为什么会成为边缘瓶颈
+### 16.1.1 KV Cache 为什么会成为边缘瓶颈
 
 对于一个标准的 Decoder-only Transformer，KV Cache 的峰值显存估算为：
 
@@ -31,7 +31,7 @@ KV Cache (bytes) ≈ 2 × num_layers × num_kv_heads × head_dim × seq_len × b
 
 如果序列拉到 8192，仅 KV Cache 就要约 7.4 GB。这还没算权重、激活值、系统开销。在 Jetson Orin Nano 8 GB 或手机 8 GB 设备上，长上下文很容易把内存打满。因此边缘优化的第一项工作，通常就是**压缩 KV Cache**。
 
-### 17.1.2 GQA / MQA / MLA 在边缘的收益
+### 16.1.2 GQA / MQA / MLA 在边缘的收益
 
 **Multi-Head Attention（MHA）** 每个头都有独立的 K/V，KV Cache 最大。**Grouped-Query Attention（GQA）** 让多个 query head 共享一组 K/V head，显著减少 KV Cache。**Multi-Query Attention（MQA）** 更进一步，所有 query head 共享同一组 K/V。
 
@@ -50,7 +50,7 @@ KV Cache (bytes) ≈ 2 × num_layers × num_kv_heads × head_dim × seq_len × b
 - 如果目标设备内存极度受限，可以考虑 MQA 或 MLA 架构的模型。
 - 边缘端不建议自己从零训练注意力变体，优先选择已经验证好的开源模型。
 
-### 17.1.3 Sliding-window / StreamingLLM / H2O
+### 16.1.3 Sliding-window / StreamingLLM / H2O
 
 当序列长度超过设备能承载的 KV Cache 上限时，需要**主动遗忘**部分历史 token。常见策略有三种。
 
@@ -93,7 +93,7 @@ H2O 认为，真正重要的 token 是那些**被很多后续 token 高频访问
 | **StreamingLLM** | sink + 最近 W 个 | 否 | 好 | 流式输入、边缘首选 |
 | **H2O** | heavy hitters + 最近 W 个 | 否 | 较好 | 开放域对话 |
 
-### 17.1.4 KV Cache INT8/INT4 量化
+### 16.1.4 KV Cache INT8/INT4 量化
 
 除了减少 KV Cache 的 token 数量，还可以通过**降低每个值的精度**来压缩。
 
@@ -118,7 +118,7 @@ K_int8 = round(K / scale_k)
 K_fp16 = K_int8 * scale_k  # 计算时反量化
 ```
 
-### 17.1.5 与云侧 PagedAttention 的差异
+### 16.1.5 与云侧 PagedAttention 的差异
 
 云侧 vLLM 的 **PagedAttention** 把 KV Cache 分成固定大小的 block，像操作系统的虚拟内存一样动态分配，支持 preemptive scheduling 和请求间共享前缀。
 
@@ -140,11 +140,11 @@ K_fp16 = K_int8 * scale_k  # 计算时反量化
 
 ---
 
-## 17.2 量化与校准实战 ★
+## 16.2 量化与校准实战 ★
 
 量化是边缘部署的必修课。同样的模型，FP16 可能在 8 GB 设备上跑不起来，INT4 后就能在 4 GB 设备上流畅运行。但量化不是简单地把权重改成 INT8/INT4，**校准流程和精度评估**决定了最终能否交付。
 
-### 17.2.1 PTQ / QAT / GPTQ / AWQ / SmoothQuant 在边缘的适用性
+### 16.2.1 PTQ / QAT / GPTQ / AWQ / SmoothQuant 在边缘的适用性
 
 | 方法 | 是否需要训练数据 | 是否需要反向传播 | 典型精度 | 边缘落地成本 | 推荐场景 |
 |-----|--------------|--------------|---------|------------|---------|
@@ -181,7 +181,7 @@ W' = diag(s) · W
 
 这样激活变得好量化，权重稍微难量化一点，但整体 INT8 精度可以接近 FP16。SmoothQuant 在边缘 INT8 部署中非常有效。
 
-### 17.2.2 Calibration 流程与数据集选择
+### 16.2.2 Calibration 流程与数据集选择
 
 校准数据集的质量直接决定量化后的精度。常见实践：
 
@@ -210,7 +210,7 @@ for layer in model.layers:
 | 多语言 | 目标语种 Wikipedia/对话 | 512 | 不能用纯英文校准多语言模型 |
 | 视觉语言 | 目标图像-文本对 | 256-512 | 覆盖目标分辨率 |
 
-### 17.2.3 精度评估（perplexity + task-level）
+### 16.2.3 精度评估（perplexity + task-level）
 
 量化后的模型不能只测 perplexity，必须测**下游任务精度**。
 
@@ -236,7 +236,7 @@ PPL 好不代表任务表现好。必须测真实任务：
 | **任务精度** | MMLU、GSM8K、HumanEval | 能力验证 | 相对 FP16 < 2% |
 | **端到端** | 客户业务指标 | 真实交付 | 满足 SLA |
 
-### 17.2.4 Per-layer / Per-channel / Group-wise 量化影响
+### 16.2.4 Per-layer / Per-channel / Group-wise 量化影响
 
 量化粒度越细，精度越好，但计算和存储 overhead 越大。
 
@@ -255,11 +255,11 @@ PPL 好不代表任务表现好。必须测真实任务：
 
 ---
 
-## 17.3 模型轻量化 ★
+## 16.3 模型轻量化 ★
 
 量化之外，模型本身的大小和结构也需要为边缘优化。蒸馏、剪枝、NAS 和专门的 edge-friendly 模型家族，是三种主要思路。
 
-### 17.3.1 蒸馏、剪枝、NAS for edge
+### 16.3.1 蒸馏、剪枝、NAS for edge
 
 **知识蒸馏（Knowledge Distillation）**
 
@@ -285,7 +285,7 @@ PPL 好不代表任务表现好。必须测真实任务：
 
 对于 CV 小模型，NAS 可以自动搜索适合目标 NPU 的算子组合和通道数。例如 **Once-for-All**、**BigNAS**、**Hardware-aware NAS**。在 LLM 领域，NAS 更多用于搜索 attention head 数、FFN 维度、层数等。
 
-### 17.3.2 Edge-friendly 模型家族
+### 16.3.2 Edge-friendly 模型家族
 
 近年来，多个模型家族专门针对边缘场景优化：
 
@@ -305,7 +305,7 @@ PPL 好不代表任务表现好。必须测真实任务：
 - 如果需要跨平台部署和丰富工具链，Llama 3.2 是稳妥选择。
 - 如果需要长上下文且内存受限，DeepSeek-V2/V3 的 MLA 值得尝试。
 
-### 17.3.3 1B-4B vs 量化 7B-13B 选型
+### 16.3.3 1B-4B vs 量化 7B-13B 选型
 
 边缘部署常面临一个选择：用原生小模型（1B-4B），还是把 7B-13B 量化到 INT4？
 
@@ -327,11 +327,11 @@ PPL 好不代表任务表现好。必须测真实任务：
 
 ---
 
-## 17.4 异构调度与多模型部署 ★
+## 16.4 异构调度与多模型部署 ★
 
 边缘设备通常有多个计算单元：CPU、GPU、NPU、DSP。如何把它们组合起来，同时运行多个模型，是量产中的核心工程问题。
 
-### 17.4.1 CPU + GPU/NPU 混合执行
+### 16.4.1 CPU + GPU/NPU 混合执行
 
 一个典型的异构执行策略：
 
@@ -364,7 +364,7 @@ CPU 组装最终输出
 2. **流水线重叠**：当 NPU 处理第 N 帧时，CPU 可以预处理第 N+1 帧。
 3. **避免 NPU 空闲等 CPU**：如果后处理太重，NPU 会空转，需要把部分后处理移到 NPU 或优化 CPU 代码。
 
-### 17.4.2 Graph Partitioning 与 Fallback
+### 16.4.2 Graph Partitioning 与 Fallback
 
 边缘 NPU 的算子支持通常不完整。遇到不支持的算子时，框架需要把这部分图切下来，fallback 到 CPU 或 GPU 执行。
 
@@ -388,7 +388,7 @@ CPU 组装最终输出
 - 用 `onnx-simplifier` 或框架自带工具把图简化成 NPU 友好形式。
 - 对于必须 fallback 的算子，尽量合并成一个大的 CPU 子图，减少切换次数。
 
-### 17.4.3 内存预算分配、模型热切换、Pipeline 组合
+### 16.4.3 内存预算分配、模型热切换、Pipeline 组合
 
 当设备需要同时驻留多个模型时，必须做严格的内存预算。
 
@@ -426,7 +426,7 @@ camera → YOLO（NPU）→ 目标 crop → CLIP（NPU）→ LLM（GPU）→ TTS
 
 这种 pipeline 需要在不同模型之间共享内存池，避免每个模型独立分配导致碎片化。
 
-### 17.4.4 RTOS / Android / Linux 约束
+### 16.4.4 RTOS / Android / Linux 约束
 
 不同操作系统对边缘 AI 的运行有不同约束：
 
@@ -445,11 +445,11 @@ camera → YOLO（NPU）→ 目标 crop → CLIP（NPU）→ LLM（GPU）→ TTS
 
 ---
 
-## 17.5 VLM / VLA 边缘部署 ★
+## 16.5 VLM / VLA 边缘部署 ★
 
 多模态模型（VLM、VLA）正在快速进入边缘场景：智能摄像头、机器人、AR 眼镜、车载感知。但多模态的部署复杂度远高于纯文本 LLM。
 
-### 17.5.1 视觉编码器量化与图优化
+### 16.5.1 视觉编码器量化与图优化
 
 VLM 通常包含两部分：
 
@@ -474,7 +474,7 @@ VLM 通常包含两部分：
 - 使用 per-channel 量化而非 per-tensor。
 - 对视觉编码器单独做校准，而不是和 LLM 共用一套 scale。
 
-### 17.5.2 多模态 Pipeline：camera → preprocess → encoder → LLM
+### 16.5.2 多模态 Pipeline：camera → preprocess → encoder → LLM
 
 一个典型的边缘 VLM pipeline：
 
@@ -507,7 +507,7 @@ LLM Decoder（GPU/NPU）生成文本
 3. **Batch visual tokens**：如果是视频流，相邻帧的视觉特征可以缓存或复用。
 4. **Pipeline 并行**：预处理下一帧时，LLM 正在解码当前帧的文本。
 
-### 17.5.3 LLaVA / Qwen-VL / Phi-vision / OpenVLA 部署路径
+### 16.5.3 LLaVA / Qwen-VL / Phi-vision / OpenVLA 部署路径
 
 | 模型 | 视觉编码器 | LLM | 边缘部署特点 |
 |-----|-----------|-----|------------|
@@ -550,7 +550,7 @@ Action head → 机器人动作（end-effector pose / joint angles）
 
 部署时通常把 DINOv2 + SigLIP 两个编码器量化到 INT8，Llama 量化到 INT4/INT8，action head 保留 FP16。
 
-### 17.5.4 视频流帧率/延迟权衡
+### 16.5.4 视频流帧率/延迟权衡
 
 视频流场景下，VLM 面临一个基本矛盾：
 
@@ -575,11 +575,11 @@ Action head → 机器人动作（end-effector pose / joint angles）
 
 ---
 
-## 17.6 Inflight Batching 在边缘
+## 16.6 Inflight Batching 在边缘
 
 Inflight Batching（也叫 Continuous Batching）是云侧提高吞吐的核心技术。但在边缘，它不一定总是最优选择。
 
-### 17.6.1 小 batch、低延迟场景的差异
+### 16.6.1 小 batch、低延迟场景的差异
 
 云侧 inflight batching 的目标是：
 
@@ -593,7 +593,7 @@ Inflight Batching（也叫 Continuous Batching）是云侧提高吞吐的核心�
 - 用户要求**确定性的低延迟**。
 - 内存本来就紧张，batch 大了 KV Cache 会爆。
 
-### 17.6.2 什么时候有用，什么时候有害
+### 16.6.2 什么时候有用，什么时候有害
 
 **Inflight Batching 在边缘有用的场景**：
 
@@ -622,11 +622,11 @@ Inflight Batching（也叫 Continuous Batching）是云侧提高吞吐的核心�
 
 ---
 
-## 17.7 问题排查与客户支持 ★
+## 16.7 问题排查与客户支持 ★
 
 边缘项目落地过程中，问题往往不在算法本身，而在**硬件、驱动、SDK、客户环境**的耦合。建立标准化的排查流程和协作模板，是量产交付的关键。
 
-### 17.7.1 功能 / 性能 / 精度 triage 流程
+### 16.7.1 功能 / 性能 / 精度 triage 流程
 
 收到客户问题后，第一步是按类型分类：
 
@@ -671,7 +671,7 @@ Inflight Batching（也叫 Continuous Batching）是云侧提高吞吐的核心�
 - tokenizer 与训练时不一致（especially chat template）。
 - KV Cache 驱逐策略丢失关键上下文。
 
-### 17.7.2 SDK / BSP / 驱动版本冲突
+### 16.7.2 SDK / BSP / 驱动版本冲突
 
 边缘部署最痛苦的问题之一就是**版本矩阵**。一个 Jetson 项目可能涉及：
 
@@ -698,7 +698,7 @@ Inflight Batching（也叫 Continuous Batching）是云侧提高吞吐的核心�
 3. **CI 覆盖目标版本**：在多个 JetPack / BSP 版本上跑回归测试。
 4. **与客户对齐升级窗口**：边缘设备升级 BSP 成本高，不能随意升级。
 
-### 17.7.3 温度墙/降频检测
+### 16.7.3 温度墙/降频检测
 
 边缘设备散热有限，长时间高负载会触发 thermal throttling，性能断崖式下降。
 
@@ -742,7 +742,7 @@ adb shell cat /sys/class/devfreq/*gpu*/cur_freq
 | **间歇运行** | 推理与空闲交替，给设备散热时间 |
 | **选择低功耗模型** | 用更小模型或更低精度 |
 
-### 17.7.4 跨团队协作模板（算法 / 硬件 / 客户）
+### 16.7.4 跨团队协作模板（算法 / 硬件 / 客户）
 
 边缘问题通常需要算法、硬件、框架、客户多方协作。一个标准的 issue 模板可以大幅减少沟通成本。
 
@@ -795,7 +795,7 @@ adb shell cat /sys/class/devfreq/*gpu*/cur_freq
 
 ---
 
-## 17.8 边缘上线 Checklist
+## 16.8 边缘上线 Checklist
 
 在把边缘 AI 模型交付给客户之前，建议逐项检查以下清单。
 
@@ -843,7 +843,7 @@ adb shell cat /sys/class/devfreq/*gpu*/cur_freq
 
 ---
 
-## 17.9 小结
+## 16.9 小结
 
 边缘 AI 优化是一个端到端的系统工程：
 

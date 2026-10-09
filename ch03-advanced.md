@@ -1,4 +1,4 @@
-# 第2章 进阶篇 — 高性能推理架构与优化
+# 第3章 进阶篇 — 高性能推理架构与优化
 
 > **面向角色**：有 1-2 年经验的推理工程师  
 > **目标**：深入理解推理引擎的核心架构决策与优化技术  
@@ -6,9 +6,9 @@
 
 ---
 
-## 2.1 Continuous Batching 与调度深度剖析 ★
+## 3.1 Continuous Batching 与调度深度剖析 ★
 
-### 2.1.1 vLLM Scheduler 设计
+### 3.1.1 vLLM Scheduler 设计
 
 vLLM V1 的 Scheduler（`vllm/v1/core/sched/scheduler.py`）是一个**基于优先级的连续批处理器**。
 
@@ -40,7 +40,7 @@ schedule() → SchedulerOutput:
 - `max_num_scheduled_tokens` 限制每步 prefill 的 token 总量（用于 chunked prefill）
 - 支持 **preemption**（当 KV Cache 不足时，抢占/换出低优先级请求的 block）
 
-### 2.1.2 SGLang Scheduler 设计
+### 3.1.2 SGLang Scheduler 设计
 
 SGLang 的 Scheduler（`sglang/srt/managers/scheduler.py`，~4300 行！）采用了更激进的优化策略。
 
@@ -77,7 +77,7 @@ SGLang:     [CPU Scheduler]                        [CPU Scheduler]
 
 这就是 `scheduler.py` 中 `overlap_utils.py`、`batch_overlap/` 模块的作用——通过 CUDA Stream 管理实现计算和调度的 overlap。
 
-### 2.1.3 Jump-Forward / Fast-Forward (SGLang 独有) ☆
+### 3.1.3 Jump-Forward / Fast-Forward (SGLang 独有) ☆
 
 当 SGLang 检测到请求有**长前缀匹配**（如多个请求共享同一个 system prompt），它会：
 
@@ -95,9 +95,9 @@ match_result = tree_cache.match_prefix(MatchPrefixParams(
 
 ---
 
-## 2.2 并行策略：TP / PP / EP / DP / SP ★
+## 3.2 并行策略：TP / PP / EP / DP / SP ★
 
-### 2.2.1 Tensor Parallelism (TP) ★
+### 3.2.1 Tensor Parallelism (TP) ★
 
 **切分方式**：每层的权重矩阵按列/行切分到多个 GPU。
 
@@ -124,7 +124,7 @@ FFN Layer (intermediate_size=28672, TP=2):
 - 单模型 > 单卡显存（如 70B 模型 → TP=2~8）
 - 需要低延迟（层内通信 vs 层间通信，TP 比 PP 延迟更低）
 
-### 2.2.2 Pipeline Parallelism (PP) ★
+### 3.2.2 Pipeline Parallelism (PP) ★
 
 **切分方式**：模型按层切分到多个 GPU。
 
@@ -150,7 +150,7 @@ Time →   [GPU0: L0-19] [GPU0: idle        ] [GPU0: L0-19]
 - 但 PP 在推理中不如 TP 常用，因为 TOPT 对延迟敏感，pipeline bubble 难以接受
 - 实际中更常见的做法是 **TP + PP 混合**：如 Llama-405B → TP=8 + PP=2
 
-### 2.2.3 Expert Parallelism (EP) — MoE 专用 ★
+### 3.2.3 Expert Parallelism (EP) — MoE 专用 ★
 
 **MoE 模型特点**：每个 token 只激活部分专家（如 8/256），计算量只占总参数的 ~10%。
 
@@ -183,7 +183,7 @@ EP=4, 256 experts:
 
 **实战考量**：DeepSeek-V3/R1 这类巨型 MoE 模型通常 TP=1 + EP=较大，因为 MoE FFN 是最重的部分。
 
-### 2.2.4 DP / SP 及其他并行
+### 3.2.4 DP / SP 及其他并行
 
 | 策略 | 切分维度 | 通信 | 推理中适用性 |
 |------|---------|------|------------|
@@ -195,9 +195,9 @@ EP=4, 256 experts:
 
 ---
 
-## 2.3 PD 分离 (Prefill-Decode Disaggregation) ★
+## 3.3 PD 分离 (Prefill-Decode Disaggregation) ★
 
-### 2.3.1 为什么需要 PD 分离？
+### 3.3.1 为什么需要 PD 分离？
 
 回顾 1.1.2 节的结论：prefill 是 compute-bound，decode 是 memory-bound。同一个 GPU 无法同时高效处理两者。
 
@@ -218,7 +218,7 @@ PD 分离 (disaggregate):
 2. **独立弹性伸缩**：P 和 D 独立扩容（读多写少场景可以 D 多 P 少）
 3. **批量优化**：P 可以做更大的 batch（token-level batching），D 可以做并发 decode
 
-### 2.3.2 SGLang 的 PD 分离实现 ★
+### 3.3.2 SGLang 的 PD 分离实现 ★
 
 SGLang 在 `sglang/srt/disaggregation/` 中实现了完整的 PD 分离架构：
 
@@ -242,7 +242,7 @@ Decode Server (decode.py):
 - `mori/`: Mori 传输后端
 - `ascend/`: 华为昇腾专用 backend
 
-### 2.3.3 Mooncake KV Transfer ☆
+### 3.3.3 Mooncake KV Transfer ☆
 
 Mooncake（来自腾讯/Moonshot 的 Splitwise 工程）核心思想：
 
@@ -259,7 +259,7 @@ Mooncake:       细粒度 → P 每计算完一层，即刻传输该层的 KV �
 
 SGLang 的 Mooncake 集成在 `disaggregation/mooncake/` 中，通过 RDMA 实现低延迟 KV 传输。
 
-### 2.3.4 HiCache 三级缓存 ☆
+### 3.3.4 HiCache 三级缓存 ☆
 
 ```
 L1: GPU HBM (热缓存)
@@ -284,9 +284,9 @@ SGLang 的 HiCache 实现在 `mem_cache/hicache_storage.py` 和 `disaggregation/
 
 ---
 
-## 2.4 Attention 优化 ★
+## 3.4 Attention 优化 ★
 
-### 2.4.1 PagedAttention (vLLM 核心创新) ★
+### 3.4.1 PagedAttention (vLLM 核心创新) ★
 
 **问题**：KV Cache 的显存碎片化。如果为每个请求预留连续的 max_seq_len 空间，浪费严重（大部分请求用不完）。
 
@@ -319,7 +319,7 @@ Attention 计算:
 - vLLM: `vllm/v1/core/kv_cache_manager.py` — 管理 block 池、分配/回收
 - vLLM: `vllm/v1/core/kv_cache_utils.py` — `KVCacheBlock` 数据结构
 
-### 2.4.2 FlashAttention / FlashInfer ★
+### 3.4.2 FlashAttention / FlashInfer ★
 
 | 实现 | 特点 | 适用场景 |
 |------|------|---------|
@@ -336,7 +336,7 @@ Attention 计算:
 
 SGLang 深度集成了 FlashInfer（`sglang/srt/layers/attention/flashinfer_backend.py`），vLLM V1 也支持 FlashInfer。
 
-### 2.4.3 MLA (Multi-head Latent Attention) - DeepSeek 贡献 ★
+### 3.4.3 MLA (Multi-head Latent Attention) - DeepSeek 贡献 ★
 
 MLA 的核心思想：**压缩 KV Cache**。
 
@@ -359,7 +359,7 @@ MLA:
 - 收益：KV Cache 压缩 5-10x，同等显存支持更多并发
 - 代价：decode 时每次需要上投影（额外的 matmul），但因为 decode 是 memory-bound，所以影响不大
 
-### 2.4.4 稀疏注意力：NSA / DSA（DeepSeek V3.2 贡献）★
+### 3.4.4 稀疏注意力：NSA / DSA（DeepSeek V3.2 贡献）★
 
 DeepSeek-V3.2-Exp 引入了两类稀疏注意力，目标是在**不牺牲精度的前提下把长上下文的 KV Cache 和算力降下来**，对边缘和长上下文服务都重要：
 
@@ -392,9 +392,9 @@ DSA 是 NSA 的进一步演进（DeepSeek-V3.2-Exp 采用），核心变化：
 
 ---
 
-## 2.5 长文本与多模态 ☆
+## 3.5 长文本与多模态 ☆
 
-### 2.5.1 RoPE 与位置编码扩展
+### 3.5.1 RoPE 与位置编码扩展
 
 ```
 RoPE (Rotary Position Embedding):
@@ -406,7 +406,7 @@ YaRN (Yet another RoPE extensioN):
   - Llama-2-4K → 32K 的扩展方式
 ```
 
-### 2.5.2 长上下文优化的关键技术
+### 3.5.2 长上下文优化的关键技术
 
 | 技术 | 原理 | 加速比 |
 |------|------|--------|
@@ -415,7 +415,7 @@ YaRN (Yet another RoPE extensioN):
 | **KV Cache Offload** | 不活跃 block 换出到 CPU | ∞（不限制 GPU 内存）|
 | **StreamingLLM** | 保留 attention sink + 最近 window | O(1) 显存 |
 
-### 2.5.3 多模态推理
+### 3.5.3 多模态推理
 
 vLLM 和 SGLang 都支持以下多模态模型：
 - **LLaVA / LLaVA-NeXT**: Image → Vision Encoder → Projection → LLM
@@ -431,9 +431,9 @@ SGLang 在 `sglang/srt/managers/multimodal_processor.py` 和 `sglang/srt/multimo
 
 ---
 
-## 2.6 投机解码深度剖析 ★
+## 3.6 投机解码深度剖析 ★
 
-### 2.6.1 Eagle / Medusa / MTP
+### 3.6.1 Eagle / Medusa / MTP
 
 | 方法 | Draft 模型 | 特点 |
 |------|-----------|------|
@@ -441,12 +441,12 @@ SGLang 在 `sglang/srt/managers/multimodal_processor.py` 和 `sglang/srt/multimo
 | **Eagle** | 小 decoder（1-2 层 Transformer） | 更准确、更快 |
 | **MTP (Multi-Token Prediction)** | 大模型自带的多 token 预测头（DeepSeek-V3）| 无需额外模型 |
 | **ngram** | n-gram 模式匹配 | 零额外计算 |
-| **dFlash (SGLang)** | 并行块草稿（in-filling 式，见 §2.6.4） | 延迟最优 |
-| **DSpark / DSV4 系** | 半自回归：并行骨干 + Markov 头（见 §2.6.4） | dFlash 的精度增强版 |
+| **dFlash (SGLang)** | 并行块草稿（in-filling 式，见 §3.6.4） | 延迟最优 |
+| **DSpark / DSV4 系** | 半自回归：并行骨干 + Markov 头（见 §3.6.4） | dFlash 的精度增强版 |
 
-> **草稿架构演化线**：外挂小模型（Eagle/Medusa）→ 模型自带草稿头（MTP）→ 抛弃逐 token 自回归、整块并行出草稿（dFlash）→ 在并行块内补回依赖关系（DSpark）。§2.6.4 展开这条线。
+> **草稿架构演化线**：外挂小模型（Eagle/Medusa）→ 模型自带草稿头（MTP）→ 抛弃逐 token 自回归、整块并行出草稿（dFlash）→ 在并行块内补回依赖关系（DSpark）。§3.6.4 展开这条线。
 
-### 2.6.2 Eagle 工作原理 ★
+### 3.6.2 Eagle 工作原理 ★
 
 ```
 大模型 (Target):  80 layers Transformer
@@ -478,7 +478,7 @@ Step 4: 接受/拒绝采样（使用 speculative sampling 的 accept probability
 - `vllm/v1/spec_decode/medusa.py`: Medusa proposer
 - `vllm/v1/spec_decode/draft_model.py`: 通用 draft model 接口
 
-### 2.6.3 MTP (Multi-Token Prediction) — DeepSeek 贡献 ☆
+### 3.6.3 MTP (Multi-Token Prediction) — DeepSeek 贡献 ☆
 
 DeepSeek-V3 原生支持 MTP：模型训练时就加入了额外的 prediction heads，可以直接预测未来 1-4 个 token。
 
@@ -501,7 +501,7 @@ MTP Transformer:
 - MTP 的 draft 质量通常不如专门的 Eagle 模型 → **accept rate 可能更低**
 - DeepSeek-V3 的 MTP 在实践中达到 ~1.5-2x 的 decode 加速
 
-### 2.6.4 块草稿家族：dFlash 与 DSpark ☆→★
+### 3.6.4 块草稿家族：dFlash 与 DSpark ☆→★
 
 Eagle/MTP 系的草稿都是**逐 token 自回归**的——draft 模型自己也要一个接一个地猜，猜 N 个 token 要跑 N 步。这条约束在 2025 年被两条新路线打破，合称"块草稿（block drafting）"。
 
@@ -514,7 +514,7 @@ dFlash 整块草稿:     [h₁..h_N] → [token₁..token_N]              （1 �
 
 做法：把 draft tokens 以 in-filling（填充）方式直接塞进 target 的 attention 里——上下文 K/V 预计算好之后，整块 draft token 一次非因果前向并行产出。省掉了 draft 模型的独立串行 forward，延迟最优；代价是块内 token 互相"不知道对方是谁"，长块的接受率会衰减。
 
-源码定位：SGLang `sglang/srt/speculative/dflash_worker_v2.py` / `dflash_info_v2.py` / `triton_ops/dflash.py`；vLLM 已移植 `vllm/v1/spec_decode/dflash.py`（详见 第4章 §4.6.3）。
+源码定位：SGLang `sglang/srt/speculative/dflash_worker_v2.py` / `dflash_info_v2.py` / `triton_ops/dflash.py`；vLLM 已移植 `vllm/v1/spec_decode/dflash.py`（详见 第8章 §8.6.3）。
 
 **DSpark：给并行块补回"块内依赖"**
 
@@ -534,7 +534,7 @@ DSpark（Qwen3-DSpark，`vllm/model_executor/models/qwen3_dspark.py`）针对 dF
 
 工程含义：DSpark/DSV4 系草稿模型需要引擎侧配套支持（vLLM `qwen3_dspark.py`、SGLang 对应 backend），选型时把它当作"draft 模型生态的一部分"评估，而不是独立的调度算法。
 
-### 2.6.5 零成本草稿与工程组合 ☆→★
+### 3.6.5 零成本草稿与工程组合 ☆→★
 
 **① n-gram / Prompt Lookup：从上下文里抄答案**
 
@@ -576,9 +576,9 @@ Medusa/Eagle 的草稿可以组织成树而非链：多头每步出 top-k 候选
 
 ---
 
-## 2.7 量化进阶：INT4/FP8 实战 ★
+## 3.7 量化进阶：INT4/FP8 实战 ★
 
-### 2.7.1 W4A16 vs W8A8 vs FP8 的选择
+### 3.7.1 W4A16 vs W8A8 vs FP8 的选择
 
 | 方案 | 权重 | 激活 | HBM 节省 | 精度损失 | 硬件要求 |
 |------|------|------|----------|---------|---------|
@@ -587,7 +587,7 @@ Medusa/Eagle 的草稿可以组织成树而非链：多头每步出 top-k 候选
 | FP8 (E4M3) | FP8 | FP8 | 2x 全部 | 几乎无 | H100+ |
 | W4A8 | INT4 | INT8 | 4x 权重+2x 激活 | 中等 | 需要特殊 kernel |
 
-### 2.7.2 vLLM 的量化支持结构
+### 3.7.2 vLLM 的量化支持结构
 
 ```
 vllm/model_executor/layers/quantization/
@@ -599,7 +599,7 @@ vllm/model_executor/layers/quantization/
 └── ...
 ```
 
-### 2.7.3 SGLang 的量化支持
+### 3.7.3 SGLang 的量化支持
 
 ```
 sglang/srt/layers/quantization/
@@ -612,7 +612,7 @@ sglang/srt/layers/quantization/
 └── ...
 ```
 
-### 2.7.4 KV Cache 量化的实现细节 ☆
+### 3.7.4 KV Cache 量化的实现细节 ☆
 
 ```
 FP16 KV → FP8 KV:
@@ -629,7 +629,7 @@ FP16 KV → FP8 KV:
 
 ---
 
-## 2.8 本章小结
+## 3.8 本章小结
 
 | 领域 | 核心知识点 | 重要程度 |
 |------|-----------|---------|

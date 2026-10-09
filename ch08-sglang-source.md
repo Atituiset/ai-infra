@@ -1,4 +1,4 @@
-# 第4章 SGLang 源码深度解剖
+# 第8章 SGLang 源码深度解剖
 
 > **面向角色**：需要阅读或修改 SGLang 源码的工程师  
 > **目标**：建立从请求到 GPU forward 的 SGLang 完整数据流认知  
@@ -6,9 +6,9 @@
 
 ---
 
-## 4.1 SGLang 架构总览
+## 8.1 SGLang 架构总览
 
-### 4.1.1 与 vLLM 的架构差异
+### 8.1.1 与 vLLM 的架构差异
 
 SGLang 和 vLLM 解决问题的思路有本质不同：
 
@@ -22,7 +22,7 @@ SGLang 和 vLLM 解决问题的思路有本质不同：
 | **代码组织** | V1/V0 双引擎 | 单一 Runtime（但模块化更细）|
 | **内存池** | Fixed block pool | **Token-level + SWA + Mamba** 多池 |
 
-### 4.1.2 核心模块与数据流
+### 8.1.2 核心模块与数据流
 
 ```
 HTTP /gremlin → TokenizerManager → Scheduler → ModelRunner → GPU
@@ -72,9 +72,9 @@ Disaggregation:
 
 ---
 
-## 4.2 RadixAttention：前缀树式 KV Cache ★
+## 8.2 RadixAttention：前缀树式 KV Cache ★
 
-### 4.2.1 为什么需要 Radix Tree？
+### 8.2.1 为什么需要 Radix Tree？
 
 PagedAttention 的 prefix caching 是基于 block hash 的——粒度是 block（16 tokens），只能匹配完全相同的 block sequence。RadixAttention 使用**前缀树（Radix Tree）**——对 token 序列逐 token 匹配，可以找到任意长度的公共前缀。
 
@@ -93,7 +93,7 @@ RadixAttention:
   然后分别分叉到 "What is Python?", "What is Rust?", "How to cook?"
 ```
 
-### 4.2.2 Radix Cache 核心数据结构
+### 8.2.2 Radix Cache 核心数据结构
 
 **文件**：`sglang/srt/mem_cache/radix_cache.py`
 
@@ -130,7 +130,7 @@ class RadixCache(BasePrefixCache):
     """
 ```
 
-### 4.2.3 前缀匹配流程 ★
+### 8.2.3 前缀匹配流程 ★
 
 ```python
 def match_prefix(self, params: MatchPrefixParams) -> MatchResult:
@@ -154,7 +154,7 @@ match_result = tree_cache.match_prefix(MatchPrefixParams(
 req.prefix_indices = match_result.device_indices  # 直接传给 ModelRunner
 ```
 
-### 4.2.4 驱逐策略
+### 8.2.4 驱逐策略
 
 ```python
 class RadixCache:
@@ -181,9 +181,9 @@ class RadixCache:
 
 ---
 
-## 4.3 Overlap 调度：CPU/GPU 并行 ★
+## 8.3 Overlap 调度：CPU/GPU 并行 ★
 
-### 4.3.1 传统调度 vs Overlap 调度
+### 8.3.1 传统调度 vs Overlap 调度
 
 ```
 传统 (vLLM 模式):
@@ -201,7 +201,7 @@ SGLang Overlap 模式:
   Wall clock: T_forward + T_forward + T_forward + ...  (CPU 开销被完全隐藏！)
 ```
 
-### 4.3.2 Overlap 实现
+### 8.3.2 Overlap 实现
 
 **文件**：`sglang/srt/managers/overlap_utils.py`
 
@@ -224,7 +224,7 @@ def resolve_forward_inputs(batch: ScheduleBatch):
 2. 使用 `relay_payload` 在 forward 完成时触发结果处理
 3. 结果处理也是异步的（detokenize + 发送响应 + 更新 Radix cache）
 
-### 4.3.3 Scheduler 的 Overlap 方法
+### 8.3.3 Scheduler 的 Overlap 方法
 
 在 `scheduler.py` 的 `Scheduler` 类中：
 
@@ -244,9 +244,9 @@ class Scheduler(
 
 ---
 
-## 4.4 Model Runner 与 Forward Batch ★
+## 8.4 Model Runner 与 Forward Batch ★
 
-### 4.4.1 ModelRunner
+### 8.4.1 ModelRunner
 
 **文件**：`sglang/srt/model_executor/model_runner.py`  
 **类**：`class ModelRunner`
@@ -274,7 +274,7 @@ class ModelRunner:
         """
 ```
 
-### 4.4.2 ForwardBatch 与 ForwardMode
+### 8.4.2 ForwardBatch 与 ForwardMode
 
 **文件**：`sglang/srt/model_executor/forward_batch_info.py`
 
@@ -301,7 +301,7 @@ class ForwardBatch:
     """
 ```
 
-### 4.4.3 ScheduleBatch → ForwardBatch 转换
+### 8.4.3 ScheduleBatch → ForwardBatch 转换
 
 ```
 ScheduleBatch (CPU, high-level):
@@ -324,9 +324,9 @@ ForwardBatch (GPU, low-level):
 
 ---
 
-## 4.5 PD 分离实现 ★
+## 8.5 PD 分离实现 ★
 
-### 4.5.1 整体生命周期
+### 8.5.1 整体生命周期
 
 SGLang 的 PD 分离是目前所有推理引擎中实现最完整的。
 
@@ -365,7 +365,7 @@ SGLang 的 PD 分离是目前所有推理引擎中实现最完整的。
    - 合并到 RunningBatch 执行 decode
 ```
 
-### 4.5.2 Mooncake 传输后端
+### 8.5.2 Mooncake 传输后端
 
 **文件**：`sglang/srt/disaggregation/mooncake/`
 
@@ -374,7 +374,7 @@ Mooncake 传输的核心优势：
 2. **RDMA 零拷贝**：绕过 CPU，GPU → 网络 → GPU 直接传输
 3. **带宽利用**：流水线式的传输 + 计算 overlap
 
-### 4.5.3 HiCache 集成
+### 8.5.3 HiCache 集成
 
 HiCache（`mem_cache/hicache_storage.py`）提供跨节点的 KV Cache 存储抽象：
 
@@ -413,9 +413,9 @@ class DecodeHiCacheTransferMixin:
 
 ---
 
-## 4.6 投机解码实现 ☆
+## 8.6 投机解码实现 ☆
 
-### 4.6.1 SGLang 支持的投机方法
+### 8.6.1 SGLang 支持的投机方法
 
 **文件**：`sglang/srt/speculative/`
 
@@ -435,7 +435,7 @@ speculative/
 └── ...
 ```
 
-### 4.6.2 Eagle v2 Worker 关键流程
+### 8.6.2 Eagle v2 Worker 关键流程
 
 ```python
 class EagleWorkerV2:
@@ -472,7 +472,7 @@ class EagleWorkerV2:
         """
 ```
 
-### 4.6.3 dFlash（draft-Flash）☆
+### 8.6.3 dFlash（draft-Flash）☆
 
 dFlash（draft-Flash）是 SGLang 提出的投机解码方法，现已被 vLLM 移植支持（`vllm/vllm/v1/spec_decode/dflash.py`，面向 Qwen3.5 等支持 in-filling 的模型）：
 
@@ -487,17 +487,17 @@ dFlash:      Target → 在 attention 中直接"填充" draft tokens
 - 对短 prompt 场景尤其有效
 ```
 
-> 演进：SGLang 最早实现（第4章 源码），vLLM 后续在 V1 引擎中提供 `DFlashProposer`。两者在 mask token 处理和上下文 K/V 复用上思路一致，实现细节略有差异。
+> 演进：SGLang 最早实现（第8章 源码），vLLM 后续在 V1 引擎中提供 `DFlashProposer`。两者在 mask token 处理和上下文 K/V 复用上思路一致，实现细节略有差异。
 >
-> **DSpark（半自回归增强版）**：Qwen3-DSpark 草稿模型在 dFlash 的并行骨干上叠加低秩 Markov 头，采样时逐位注入块内依赖（机制详解见 第2章 §2.6.4）。vLLM 侧对应 `model_executor/models/qwen3_dspark.py`。
+> **DSpark（半自回归增强版）**：Qwen3-DSpark 草稿模型在 dFlash 的并行骨干上叠加低秩 Markov 头，采样时逐位注入块内依赖（机制详解见 第3章 §3.6.4）。vLLM 侧对应 `model_executor/models/qwen3_dspark.py`。
 >
-> **组合与零成本家族**：ngram（`cpp_ngram/` + `ngram_worker.py`）、投机解码 × PD 分离的编排（`speculative/eagle_disaggregation.py`）等机制对比与选型见 第2章 §2.6.5。
+> **组合与零成本家族**：ngram（`cpp_ngram/` + `ngram_worker.py`）、投机解码 × PD 分离的编排（`speculative/eagle_disaggregation.py`）等机制对比与选型见 第3章 §3.6.5。
 
 ---
 
-## 4.7 Mem Cache 体系
+## 8.7 Mem Cache 体系
 
-### 4.7.1 多缓存类型
+### 8.7.1 多缓存类型
 
 SGLang 的 `mem_cache/` 目录包含了业界最完整的 KV Cache 类型支持：
 
@@ -513,7 +513,7 @@ SGLang 的 `mem_cache/` 目录包含了业界最完整的 KV Cache 类型支持�
 | **SessionRadixCache** | `session_radix_cache.py` | 多轮对话的会话级缓存 |
 | **DeepSeekV4** | `deepseek_v4_memory_pool.py` | DeepSeek V4 专用内存池 |
 
-### 4.7.2 内存池层级
+### 8.7.2 内存池层级
 
 ```
 ReqToTokenPool:
@@ -529,7 +529,7 @@ TokenToKVPool (KVCache):
 
 ---
 
-## 4.8 关键设计决策总结
+## 8.8 关键设计决策总结
 
 | 决策 | SGLang 的选择 | 理由 |
 |------|-------------|------|
@@ -543,7 +543,7 @@ TokenToKVPool (KVCache):
 
 ---
 
-## 4.9 源码阅读路线
+## 8.9 源码阅读路线
 
 ```
 第一遍（理解 SGLang 的独特设计）:
@@ -566,12 +566,14 @@ TokenToKVPool (KVCache):
 深入定制:
   12. sglang/srt/layers/attention/            ← Attention kernel
   13. sglang/srt/layers/quantization/         ← 量化 kernel
+  14. sgl-kernel/                             ← C++/CUDA 自定义 kernel
+```
 
 ---
 
-## 4.10 最新特性速览
+## 8.10 最新特性速览
 
-> 基于 SGLang 当前主线（2026 年中），以下特性在 第2章/4 主干章节之外值得单独跟踪。
+> 基于 SGLang 当前主线（2026 年中），以下特性在 第3章/第8章 主干章节之外值得单独跟踪。
 
 | 特性 | 文件位置 | 说明 |
 |------|---------|------|
@@ -587,5 +589,3 @@ TokenToKVPool (KVCache):
 | **可观测性** | `sglang/srt/observability/` | OpenTelemetry 等可观测性接入 |
 
 **跟踪建议**：这些特性大多随模型架构演进（V3.2/V4、扩散 LLM）而来，技术讨论或方案设计时可将其作为"了解当前主线"的加分项；核心的调度 / RadixAttention / Overlap / PD 分离仍以正文各节为准。
-  14. sgl-kernel/                             ← C++/CUDA 自定义 kernel
-```

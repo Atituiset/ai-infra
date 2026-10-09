@@ -1,4 +1,4 @@
-# 第5章 实战自测与自检清单
+# 第23章 实战自测与自检清单
 
 > **面向角色**：想系统自测训推平台/推理引擎知识掌握度的工程师  
 > **目标**：高频问题 + 源码定位 + 场景设计 + 能力自检  
@@ -6,22 +6,22 @@
 
 ---
 
-## 5.1 高频问题
+## 23.1 高频问题
 
-### 5.1.1 入门级（1-3 年经验）
+### 23.1.1 入门级（1-3 年经验）
 
 **Q1: 解释 Continuous Batching 如何提高 GPU 利用率。**
 - 静态 batch 必须等所有请求完成才能开始新 batch
 - Continuous batching 每个 step 后重新组 batch，完成的出，新的进
 - GPU 利用率从 20-30% → 60-80%
 - 核心挑战：KV Cache 必须支持动态分配/回收（PagedAttention / RadixAttention）
-- 参考：第1章 §1.3，第2章 §2.1
+- 参考：第1章 §1.3，第3章 §3.1
 
 **Q2: Prefill 和 Decode 阶段的区别是什么？为什么需要分别对待？**
 - Prefill: compute-bound，并行处理所有 prompt tokens
 - Decode: memory-bound，每次 1 token，受 HBM 带宽限制
 - 分开对待 → PD Disaggregation：P 用便宜高算力卡，D 用贵高带宽卡
-- 参考：第1章 §1.1.2，第2章 §2.3
+- 参考：第1章 §1.1.2，第3章 §3.3
 
 **Q3: KV Cache 的内存占用如何计算？给定模型参数，估算最大并发数。**
 - 公式: `2 × n_layers × n_kv_heads × head_dim × max_seq_len × dtype_bytes`
@@ -32,69 +32,69 @@
 - 传统：每个请求预分配连续 max_seq_len 空间 → 严重浪费
 - PagedAttention：block 粒度（16 tokens），按需分配，页表映射
 - 额外好处：block-level prefix caching，hash matching
-- 参考：第2章 §2.4.1
+- 参考：第3章 §3.4.1
 
 **Q5: 什么是 FlashAttention？为什么比标准 Attention 快？**
 - IO-aware 算法：将 attention 计算分块，避免将完整 N×N matrix 写入 HBM
 - 标准 Attention: HBM 读写 O(N²)
 - FlashAttention: HBM 读写 O(N²/d)（d 为 SRAM 大小），实际约 7-8x 加速
-- 参考：第2章 §2.4.2
+- 参考：第3章 §3.4.2
 
-### 5.1.2 进阶级（3-5 年经验）
+### 23.1.2 进阶级（3-5 年经验）
 
 **Q6: TP 和 PP 在推理中分别适合什么场景？它们的通信开销如何？**
 - TP: 层内切分，每层 forward 后 AllReduce，适合中小模型（70B 级别），延迟低
 - PP: 层间切分，层边界通信，适合极大模型（405B+），但有 pipeline bubble
 - 实际混合：405B 模型 → TP=8 + PP=2
 - 推理中 TP 更重要（低延迟优先），PP 用于突破单卡显存极限
-- 参考：第2章 §2.2.1-2.2.2
+- 参考：第3章 §3.2.1-3.2.2
 
 **Q7: MoE 模型的 EP（Expert Parallelism）如何工作？All-to-All 通信的开销如何分析？**
 - Router → Top-K expert ids → All-to-All dispatch → Expert compute → All-to-All combine
 - All-to-All 通信量 = batch_tokens × hidden_dim × 2 / EP_size（双向）
 - EP 增大 → 通信量/卡不变，但 latency 增加（更多连接）
 - DeepSeek-V3 策略：TP=1 + EP=较大 → 最大化每卡 expert 数 → 减少通信
-- 参考：第2章 §2.2.3
+- 参考：第3章 §3.2.3
 
 **Q8: PD 分离架构的核心收益是什么？SGLang 是如何实现的？**
 - 硬件异构降本（P 用 A100，D 用 H100）
 - 独立弹性伸缩（P 多 D 少 vs P 少 D 多）
 - SGLang: BootstrapQueue → WaitingQueue → Prefill → InflightQueue → KV Transfer → Decode
 - 关键：分层传输（Mooncake）+ RDMA + HiCache 三级缓存
-- 参考：第2章 §2.3.2-2.3.4
+- 参考：第3章 §3.3.2-3.3.4
 
 **Q9: 投机解码为什么能加速？Eagle 和 MTP 的区别是什么？**
 - 原理：用轻量 draft model 预测 N tokens → 大模型并行验证 → 接受/拒绝
 - 加速比取决于 draft accept rate（通常 60-80%）→ 实际 1.5-2.5x
 - Eagle: 额外 1-2 层 Transformer，需要额外显存
 - MTP: 模型自带 multi-token heads，零额外显存
-- 参考：第2章 §2.6
+- 参考：第3章 §3.6
 
 **Q10: FP8 和 INT4 量化在推理中的 trade-off 是什么？你会如何为 70B 模型选择量化方案？**
 - FP8: 2x 压缩（weight + activation），精度几乎无损，需 H100+
 - INT4 (AWQ): 4x 压缩（仅 weight），轻微精度损失（<1%），所有 GPU
 - 选择：有 H100 → FP8 W8A8；其他 GPU → AWQ W4A16
 - 对延迟敏感场景：INT4 权重更小 → decode 更快（减少 HBM 读取）
-- 参考：第2章 §2.7
+- 参考：第3章 §3.7
 
 **Q11: DeepSeek-V3.2 的稀疏注意力（NSA/DSA）如何工作？为什么说训练-推理一致性是前提？**
 - NSA：压缩块 + 选择块（可学习门控）+ 滑动窗口，KV 访问从 O(N) 降到 O(√N) 量级
 - DSA：每层前加 Lightning Indexer 输出 top-k 索引，相邻层复用/缓存选择结果
 - 一致性：如果训练时用全注意力、推理时用稀疏，分布偏移会直接导致精度崩坏，所以必须在训练阶段就采用相同稀疏模式
 - 工程影响：top-k 索引可缓存（vLLM IndexCache），Radix/Block Cache 需要感知稀疏 mask
-- 参考：第2章 §2.4.4, 第4章 §4.10
+- 参考：第3章 §3.4.4, 第8章 §8.10
 
 **Q12: 显存不足时，KV Cache Offload 和传统 Swapping 有什么区别？**
 - 传统 Swapping（vLLM Preemption）：KV 换出到 CPU，请求被抢占，换回时重新调度
 - KV Offload / Tiering：按访问频率/热度分层放置（GPU → CPU → FS/P2P/远端），对请求透明，类似操作系统的 page cache 分级
 - 关键指标：offload 带宽与 HBM 带宽的差距决定收益；长空闲序列收益最大
-- 参考：第3章 §3.7
+- 参考：第7章 §7.7
 
 > 注：Q11/Q12 属于"当前主线加分题"，考察是否跟踪 2025-2026 年的新架构，答不上不影响基础评分。
 
 ---
 
-## 5.2 源码定位题
+## 23.2 源码定位题
 
 > 以下问题考察是否真正阅读过源码。
 
@@ -165,7 +165,7 @@
 
 ---
 
-## 5.3 场景设计题
+## 23.3 场景设计题
 
 ### 场景 1：千卡集群部署 DeepSeek-V3
 
@@ -220,7 +220,7 @@
 
 ---
 
-## 5.4 自检 Checklist
+## 23.4 自检 Checklist
 
 对标训推平台/推理引擎研发岗位的常见要求：
 
@@ -250,7 +250,7 @@
 
 ---
 
-## 5.5 拓展阅读
+## 23.5 拓展阅读
 
 ### 必读论文
 

@@ -1,12 +1,12 @@
-# 第18章 引擎之上 — 网关、调度与集群系统层
+# 第12章 引擎之上 — 网关、调度与集群系统层
 
 > **面向角色**：AI Infra 平台工程师、SRE、K8s 平台研发  
-> **前置知识**：第0章-2（引擎内部原理）、基本 Kubernetes 概念  
+> **前置知识**：第0~3章（引擎内部原理）、基本 Kubernetes 概念  
 > **目标**：掌握推理引擎"之上"的系统层——GPU 资源调度、推理网关与请求路由、多租户服务、模型分发、可观测性与集群容错；建立对 2024-2026 "Inference-First Cloud" 技术版图的完整认知
 
 ---
 
-## 18.1 为什么引擎不是终点 ★
+## 12.1 为什么引擎不是终点 ★
 
 vLLM/SGLang 解决的是**单副本内**的问题：一个引擎进程如何高效吃满一张（或一组）卡。但生产系统的核心难题几乎都在**副本之间**：
 
@@ -38,9 +38,9 @@ vLLM/SGLang 解决的是**单副本内**的问题：一个引擎进程如何高�
 
 ---
 
-## 18.2 GPU 集群资源调度（K8s 层）★
+## 12.2 GPU 集群资源调度（K8s 层）★
 
-### 18.2.1 Device Plugin 与它的局限
+### 12.2.1 Device Plugin 与它的局限
 
 K8s 原生不认识 GPU。`nvidia-device-plugin` 通过 Extended Resource 把 GPU 变成可计数的整数资源（`nvidia.com/gpu: 8`）：
 
@@ -55,7 +55,7 @@ resources:
 2. **无法表达约束**："这 4 张卡必须在同一 NVLink 域"这类需求无法声明；
 3. **分配即静态**：不支持运行期重新配置（如 MIG 切分粒度变更需重启 Pod）。
 
-### 18.2.2 DRA：Dynamic Resource Allocation ☆→★
+### 12.2.2 DRA：Dynamic Resource Allocation ☆→★
 
 DRA 是 K8s 社区对上述问题的重构（alpha 自 1.26，beta 进入 1.32+，目标取代 device plugin 处理 GPU 类复杂资源）。核心对象：
 
@@ -68,14 +68,14 @@ DRA 是 K8s 社区对上述问题的重构（alpha 自 1.26，beta 进入 1.32+�
 
 对推理平台的意义：PD 分离、Wide-EP 这类需要**成组、有拓扑约束**的部署终于可以在 API 层表达，而不是靠自研调度器打补丁。
 
-### 18.2.3 Gang Scheduling：Volcano / Kueue ★
+### 12.2.3 Gang Scheduling：Volcano / Kueue ★
 
 - **Volcano**（CNCF）：引入 PodGroup 概念，All-or-nothing 调度。PD 分离架构中 P/D Pod 必须成组就位；RL 训练（见 第19章 §19.4）的 trainer + rollout engine 组更是典型 gang 场景。
 - **Kueue**：K8s 原生队列 + 配额管理，负责"排队等待配额"而不是"抢到一半挂起"。适合多团队共享集群的推理平台做公平性。
 
 **选型经验**：单模型常驻服务用原生 scheduler 即可；**多模型混部 + PD 分离 + RL 混训**的平台几乎都要 Volcano 或 Kueue 之一。
 
-### 18.2.4 GPU 共享：MIG / MPS / Time-slicing / vGPU ★
+### 12.2.4 GPU 共享：MIG / MPS / Time-slicing / vGPU ★
 
 不是所有场景都值得整卡独占。四种共享方式对比：
 
@@ -91,33 +91,33 @@ DRA 是 K8s 社区对上述问题的重构（alpha 自 1.26，beta 进入 1.32+�
 - 大模型（70B+/MoE）没有共享问题——整卡甚至整机都是最小单元；
 - 共享会破坏 CUDA Graph 重放的可预测性，延迟敏感 SLA 下慎用 MPS/time-slicing。
 
-### 18.2.5 拓扑感知调度 ★
+### 12.2.5 拓扑感知调度 ★
 
 TP=8 的请求**必须**落在同一 NVSwitch 域（GB200 NVL72 内则是同一 scale-up domain），否则 AllReduce 走 IB/PiCle 吞吐崩塌。工程实践：
 
 1. 用 Node Feature Discovery（NFD）上报机器拓扑（GPU-NVLink 邻接矩阵、NIC rail）；
 2. 调度器按拓扑标签做亲和（或等 DRA 拓扑感知 GA）；
-3. PD 分离还要加一层：P 池与 D 池之间保证 RDMA 直连路径（同 spine 或 rail-optimized 拓扑），KV 传输带宽直接决定 TTFT（参考 第2章 §2.3、第6章 Finding 6 的 87-190 GB/s 实测）。
+3. PD 分离还要加一层：P 池与 D 池之间保证 RDMA 直连路径（同 spine 或 rail-optimized 拓扑），KV 传输带宽直接决定 TTFT（参考 第3章 §3.3、第24章 Finding 6 的 87-190 GB/s 实测）。
 
 ---
 
-## 18.3 推理网关与请求路由 ★
+## 12.3 推理网关与请求路由 ★
 
-### 18.3.1 协议面：OpenAI-compatible 事实标准
+### 12.3.1 协议面：OpenAI-compatible 事实标准
 
 2023 年之后，`/v1/chat/completions` 成为事实标准 API——所有主流引擎（vLLM/SGLang/TGI/TRT-LLM）都提供兼容层。网关层的协议职责：
 
 - **SSE 流式**：token 级 chunked 输出，注意 `finish_reason`、usage 字段在最后一个 chunk；
-- **工具调用流式**：function call 参数是增量 JSON，需要 partial JSON 解析（见 §18.5.2）；
+- **工具调用流式**：function call 参数是增量 JSON，需要 partial JSON 解析（见 §12.5.2）；
 - **Chat template 归属**：模板（jinja）由谁渲染？裸引擎模式由客户端渲染 `/v1/completions`，chat 模式由引擎渲染 `/v1/chat/completions`。**多模型平台上模板地狱是真实痛点**：每个模型的 system/tool 格式都不同，网关通常需要维护 per-model 渲染策略与回归测试集。
 
-### 18.3.2 缓存、限流与公平性
+### 12.3.2 缓存、限流与公平性
 
 - **Semantic cache**：对相同/相似 prompt 直接返回缓存答案。收益大（省整个 prefill+decode），风险是语义误命中与个性化失效——只适合 FAQ 型负载，且必须带 TTL 与命中率监控；
 - **Token-based rate limiting**：按 input/output token 而非请求数限流（一次请求成本差异可达千倍）；令牌桶按 TPM/RPM 双维度；
 - **多租户公平性**：大客户长 prompt 不能饿死小客户——按租户加权公平排队（WFQ），配合引擎侧的 priority/preemption（vLLM V1 priority scheduling）实现端到端分级。
 
-### 18.3.3 Cache-aware / SLO-aware Routing ★
+### 12.3.3 Cache-aware / SLO-aware Routing ★
 
 这是 2025 年推理网关最重要的演进。传统 L7 LB 按连接数轮询，对 LLM 是灾难——它完全无视 prefix cache：
 
@@ -139,15 +139,15 @@ cache-aware：会话 A 第 5 轮 → 副本 1（radix tree 命中前 30k token�
 
 **技术叙事**：负载均衡的目标函数从「均衡连接」→「均衡 QPS」→「最大化 goodput」的三级跳，本质是因为 LLM 服务中**请求之间不再独立**（prefix cache 使历史状态有价值），这是与传统微服务最本质的区别。
 
-### 18.3.4 多模型服务形态
+### 12.3.4 多模型服务形态
 
 - **单 endpoint 多模型**：网关按 `model` 字段路由到不同副本池，统一鉴权/计量/计费；
 - **灰度与回滚**：模型也是软件——canary 流量切分、A/B 评测指标挂钩 goodput 而非成功率；
-- **Serverless GPU**（Modal/RunPod 类）：冷启动 = 镜像拉取 + 权重加载 + CUDA Graph 捕获，权重加载是大头（见 §18.6），快照/预热是核心竞争力。
+- **Serverless GPU**（Modal/RunPod 类）：冷启动 = 镜像拉取 + 权重加载 + CUDA Graph 捕获，权重加载是大头（见 §12.6），快照/预热是核心竞争力。
 
 ---
 
-## 18.4 多租户 LoRA 服务 ☆→★
+## 12.4 多租户 LoRA 服务 ☆→★
 
 **问题**：平台上有几百上千个领域微调 adapter，每个单独部署一份 base model 成本不可接受。目标是：**一份 base model 副本同时服务 N 个 LoRA**。
 
@@ -164,11 +164,11 @@ cache-aware：会话 A 第 5 轮 → 副本 1（radix tree 命中前 30k token�
 
 ---
 
-## 18.5 结构化输出基础设施 ★
+## 12.5 结构化输出基础设施 ★
 
 Agent 与工具调用时代，**输出必须是合法 JSON/语法树**不再是可选项。这催生了引擎内的一个新子系统：constrained decoding。
 
-### 18.5.1 Constrained Decoding 原理
+### 12.5.1 Constrained Decoding 原理
 
 ```
 用户给 schema/grammar
@@ -190,13 +190,13 @@ Agent 与工具调用时代，**输出必须是合法 JSON/语法树**不再是�
 
 **为什么 XGrammar 快**：传统方法对每个上下文状态重新计算合法 token 集；XGrammar 把语法编译为可复用的自适应 mask 序列，大部分步骤只做查表。
 
-### 18.5.2 Function Calling 的工程现实
+### 12.5.2 Function Calling 的工程现实
 
 - **格式分裂**：Hermes style、OpenAI strict mode、各家私有 token 约定……网关/引擎需要 per-model parser 注册表；
 - **流式 partial JSON**：工具参数要在生成中途就开始下发（前端体验），需要容错的增量 JSON 解析器；
 - **结构化通道趋势**：gpt-oss（2025-08）的 harmony 格式把 analysis/final/tool 通道编码进输出序列——结构化输出从"外挂约束"走向"模型原生格式"，引擎必须原生解析。
 
-### 18.5.3 性能账
+### 12.5.3 性能账
 
 - mask 计算/应用发生在采样热路径上，劣质实现可直接吃掉 10%+ TPOT；
 - batch 内 constrained 与 unconstrained 请求混跑时，kernel 选择分支会影响 CUDA Graph 复用；
@@ -204,9 +204,9 @@ Agent 与工具调用时代，**输出必须是合法 JSON/语法树**不再是�
 
 ---
 
-## 18.6 模型分发与存储面 ☆
+## 12.6 模型分发与存储面 ☆
 
-### 18.6.1 权重格式简史
+### 12.6.1 权重格式简史
 
 | 格式 | 时间 | 关键点 |
 |------|------|--------|
@@ -214,7 +214,7 @@ Agent 与工具调用时代，**输出必须是合法 JSON/语法树**不再是�
 | **safetensors** | HF, 2022 | 无代码执行、header 与张量分离、天然支持 mmap 零拷贝加载，现为主流 |
 | **GGUF** | llama.cpp, 2023 | 单文件自描述（元数据+量化张量），面向端侧分发 |
 
-### 18.6.2 分发链路优化
+### 12.6.2 分发链路优化
 
 大规模集群每天拉取数百 GB × 数十节点的权重，HF Hub 直连必然成为瓶颈：
 
@@ -234,9 +234,9 @@ Agent 与工具调用时代，**输出必须是合法 JSON/语法树**不再是�
 
 ---
 
-## 18.7 基准测试标准化 ☆
+## 12.7 基准测试标准化 ☆
 
-第8章 讲了 benchmark 方法论，这里补**行业标准**维度：
+第9章 讲了 benchmark 方法论，这里补**行业标准**维度：
 
 - **MLPerf Inference**（MLCommons）：数据中心/边缘两大类，四种场景（SingleStream/MultiStream/Server/Offline），closed division（固定预处理保可比）vs open division（自由优化秀肌肉）。GPT-J（2023）起纳入 LLM，后续 Llama-2/3 系列成为主力 loadgen 模型。看 MLPerf 提交可以了解头部厂商的真实调优水平；
 - **Artificial Analysis**：第三方对 API 提供商的横评（延迟/吞吐/价格），选云服务商时的参考系；
@@ -244,10 +244,10 @@ Agent 与工具调用时代，**输出必须是合法 JSON/语法树**不再是�
 
 ---
 
-## 18.8 可观测性标准化 ☆
+## 12.8 可观测性标准化 ☆
 
 - **OpenTelemetry GenAI semantic conventions**：`gen_ai.system`、`gen_ai.request.model`、token usage 等属性逐步统一（截至 2025 仍 experimental，但方向明确）。接入 OTel 后 LLM trace 可以与既有 APM 体系合流；
-- **推理特有黄金指标**（在 第8章 §8.3 基础上网关侧补充）：
+- **推理特有黄金指标**（在 第9章 §9.3 基础上网关侧补充）：
   - prefix/radix cache 命中率（路由质量的核心反馈信号）
   - preemption/retract 次数（过载先行指标）
   - 每 token 成本（$ / 1M tokens，分模型分租户）
@@ -256,9 +256,9 @@ Agent 与工具调用时代，**输出必须是合法 JSON/语法树**不再是�
 
 ---
 
-## 18.9 集群故障语义与容错 ★
+## 12.9 集群故障语义与容错 ★
 
-### 18.9.1 GPU 不是可靠硬件
+### 12.9.1 GPU 不是可靠硬件
 
 公开数据点：Meta 披露 Llama 3 级别训练（16k H100）平均**约每 3 小时遭遇一次意外中断**，其中 GPU 相关硬件故障占比最高。推理集群规模虽小，但要建立同样的心智模型：**故障是常态，预算内运维**。
 
@@ -271,20 +271,20 @@ XID 错误速查（完整表见 NVIDIA 文档，DCGM 自动采集）：
 | 79 | GPU fell off the bus | 通常驱动/硬件问题，重启节点 |
 | 94/95 | contained ECC error（MIG 内） | MIG 故障域隔离的价值所在 |
 
-### 18.9.2 推理服务的容错设计
+### 12.9.2 推理服务的容错设计
 
 - **KV Cache 是易失状态**：副本挂掉 = 该副本上全部会话的前缀缓存蒸发。因此：
   - 会话粘性路由必须有**粘性失效**预案（重路由后首请求 TTFT 尖刺是预期行为）；
-  - 关键业务可开启 KV 分层存储（HiCache/LMCache，第2章 §2.3.4）让 KV 在节点外存活；
+  - 关键业务可开启 KV 分层存储（HiCache/LMCache，第3章 §3.3.4）让 KV 在节点外存活；
 - **优雅驱逐**：K8s drain 前先停止接收新请求 → 排空存量（或迁移会话）→ 退出。给引擎配 preStop hook；
 - **优先级抢占链**：离线批处理 < 在线对话 < 关键业务，通过引擎 priority + K8s PriorityClass 两级实现；
 - **混沌演练**：定期 kill 引擎副本、断 RDMA 链路、制造 XID，验证路由收敛与 SLO 恢复时间。
 
 ---
 
-## 18.10 非 NVIDIA 硅片全景与能耗维度 ☆
+## 12.10 非 NVIDIA 硅片全景与能耗维度 ☆
 
-第12章 覆盖了国产与边缘芯片，这里补国际非 NVIDIA 数据中心阵营的**架构路线分析**：
+第13章 覆盖了国产与边缘芯片，这里补国际非 NVIDIA 数据中心阵营的**架构路线分析**：
 
 | 厂商 | 路线 | 核心取舍 |
 |------|------|----------|
@@ -294,13 +294,13 @@ XID 错误速查（完整表见 NVIDIA 文档，DCGM 自动采集）：
 
 共同哲学：**放弃 HBM 容量换取确定性延迟与带宽** → 在"低延迟小 batch"细分场景（实时语音 agent 等）有独特价值，但在高吞吐大 batch 主战场难以撼动 GPU 经济学。
 
-**能耗维度**（第13章 成本模型的物理底层）：
+**能耗维度**（第10章 成本模型的物理底层）：
 - 新指标：tokens/joule、tokens/watt——当集群进入 10 万卡级别（~150MW+），**电力而非芯片**成为扩张第一约束；
 - 行业应对：选址跟电走（水电/核电 PPA）、液冷普及、以及推理侧特有的"每 token 能耗优化"（量化、speculative decoding 的能耗账）。
 
 ---
 
-## 18.11 本章小结
+## 12.11 本章小结
 
 | 层 | 关键技术 | 一句话 |
 |----|----------|--------|
@@ -321,4 +321,4 @@ XID 错误速查（完整表见 NVIDIA 文档，DCGM 自动采集）：
 4. Constrained decoding 为什么会拖慢推理？业界怎么优化？（mask 在采样热路径 → XGrammar 编译期缓存）
 5. 一个 70B 副本扩容要多久？瓶颈在哪？（权重分发与加载）
 
-→ 交叉复习：引擎内部调度见 第2章 §2.1；KV 分层见 第2章 §2.3.4；benchmark 方法见 第8章 §8.1。
+→ 交叉复习：引擎内部调度见 第3章 §3.1；KV 分层见 第3章 §3.3.4；benchmark 方法见 第9章 §9.1。

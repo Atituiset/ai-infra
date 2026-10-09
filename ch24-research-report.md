@@ -1,12 +1,12 @@
-# 第6章 Deep Research 研究报告
+# 第24章 Deep Research 研究报告
 
 > **生成方式**：107-agent 多阶段深度检索 → 25 篇文章 → 120 条声明 → 3-vote 对抗验证 → 7 条高置信度声明 + 16 条被否决声明  
 > **日期**：2026-07-02  
-> **状态**：补充材料，与 第0章-5 互为印证
+> **状态**：补充材料，与第0~8章互为印证
 
 ---
 
-## 6.0 研究方法
+## 24.0 研究方法
 
 本报告通过以下流程生成：
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 6.1 核心发现
+## 24.1 核心发现
 
 ### Finding 1：MLA 模型在 TP 下 KV Cache 8× 重复 ★★★
 
@@ -43,7 +43,7 @@
 
 **解决方案**：DP Attention 按请求（而非按 head 维度）分区 KV cache，每个 GPU 只存储分配给它的请求的 cache → 约 8× 显存效率提升。
 
-**与 handbook 对应**：补充 第2章 §2.2.1（TP）和 §2.4.3（MLA）的讨论。
+**与 handbook 对应**：补充 第3章 §3.2.1（TP）和 §3.4.3（MLA）的讨论。
 
 **来源**：
 - vLLM RFC #16037: "If Tensor Parallelism is used in an MLA model, we duplicate the KV cache across GPUs, wasting memory"
@@ -70,7 +70,7 @@ Attention Layers:     Replicated across DP ranks
 
 **关键洞察**：这不是简单的 TP+EP 叠加，而是**对 Attention 和 MoE 层采用不同的并行策略**。这是由 MLA 的特殊架构驱动的——Attention 层不能通过 TP 高效分片（Finding 1），因此需要用 DP 替代。
 
-**与 handbook 对应**：补充 第2章 §2.2.3（EP）和 第3章 §3.2.4（KV Connector）。
+**与 handbook 对应**：补充 第3章 §3.2.3（EP）和 第7章 §7.2.4（KV Connector）。
 
 **来源**：
 - vLLM v0.11.0 官方文档 expert_parallel_deployment 页面
@@ -99,7 +99,7 @@ Attention Layers:     Replicated across DP ranks
 - vLLM 0.11.1rc3 是预发布版本
 - Moreh 独立测试在相同硬件上获得更高吞吐（9,440-21,225 tok/s），该数据可能保守
 
-**与 handbook 对应**：补充 第2章 §2.2 和 第5章 §5.3（千卡部署场景设计题）。
+**与 handbook 对应**：补充 第3章 §3.2 和 第23章 §23.3（千卡部署场景设计题）。
 
 **来源**：
 - AMD ROCm MoE Playbook: vLLM 0.11.1rc3 + ROCm 7.0
@@ -135,7 +135,7 @@ Attention Layers:     Replicated across DP ranks
 - FastMTP 仅在 MiMo-7B-RL 单模型上评估
 - FastMTP 为 arXiv 预印本
 
-**与 handbook 对应**：关键补充 第2章 §2.6（投机解码）—— 补充了 MTP 在大规模生产中的衰减数据。
+**与 handbook 对应**：关键补充 第3章 §3.6（投机解码）—— 补充了 MTP 在大规模生产中的衰减数据。
 
 **来源**：
 - LMSYS 博客 (2025-07-17): SGLang MTP 分析
@@ -165,7 +165,7 @@ Attention Layers:     Replicated across DP ranks
 - Encoder-decoder 的 cross-attention 会增加额外 all-reduce
 - 单位为元素（非字节），需乘以 dtype 位宽
 
-**与 handbook 对应**：补充 第2章 §2.2.1（TP）的通信开销分析。
+**与 handbook 对应**：补充 第3章 §3.2.1（TP）的通信开销分析。
 
 **来源**：
 - Megatron-LM 论文 (Narayanan et al., SC'21, 同行评审顶会)
@@ -187,7 +187,7 @@ Attention Layers:     Replicated across DP ranks
 2. 不同切片通过不同 NIC 并行传输
 3. 优先选择与 GPU 同 NUMA 节点的 NIC
 
-**与 handbook 对应**：补充 第2章 §2.3.3（Mooncake KV Transfer）和 第4章 §4.5.2（Mooncake 传输后端）。
+**与 handbook 对应**：补充 第3章 §3.3.3（Mooncake KV Transfer）和 第8章 §8.5.2（Mooncake 传输后端）。
 
 **来源**：
 - USENIX FAST '25 最佳论文 (Qin et al., 2025 年 2 月)
@@ -210,7 +210,7 @@ Attention Layers:     Replicated across DP ranks
 - 每个树节点记录 KV cache 所在位置（GPU/CPU/L3/多层同时）
 - 中央 cache 控制器决策数据何时 prefetch/write-back
 
-**与 handbook 对应**：补充 第2章 §2.3.4（HiCache）和 第4章 §4.5.3（HiCache 集成）。
+**与 handbook 对应**：补充 第3章 §3.3.4（HiCache）和 第8章 §8.5.3（HiCache 集成）。
 
 **来源**：
 - LMSYS 官方博客 (2025-09-10)
@@ -219,7 +219,7 @@ Attention Layers:     Replicated across DP ranks
 
 ---
 
-## 6.2 被否决的声明（及原因）
+## 24.2 被否决的声明（及原因）
 
 25 条进入验证，16 条被否决（多数 refute）。以下是值得关注的几条：
 
@@ -236,7 +236,7 @@ Attention Layers:     Replicated across DP ranks
 
 ---
 
-## 6.3 开放问题
+## 24.3 开放问题
 
 以下问题在研究中未能得到满意答案，是潜在的进阶研究方向：
 
@@ -250,21 +250,21 @@ Attention Layers:     Replicated across DP ranks
 
 ---
 
-## 6.4 对 Handbook 的关键补充
+## 24.4 对 Handbook 的关键补充
 
 | Handbook 章节 | 原内容 | Research 补充 |
 |---------------|--------|---------------|
-| 第2章 §2.2.1 (TP) | TP 切分方式 | **Finding 5**: Megatron-LM TP 通信量公式 |
-| 第2章 §2.2.3 (EP) | EP 切分方式 | **Finding 2**: Wide-EP 架构（Attention DP + Expert EP）|
-| 第2章 §2.4.3 (MLA) | MLA 压缩原理 | **Finding 1**: TP 下 8× KV Cache 重复 + DP Attention 解决方案 |
-| 第2章 §2.6 (投机解码) | Eagle/MTP 原理 | **Finding 4**: MTP 大规模衰减数据 (+60.8% → +14.2%) |
-| 第2章 §2.3.3 (Mooncake) | 概念介绍 | **Finding 6**: Mooncake 实测性能 (87-190 GB/s) |
-| 第2章 §2.3.4 (HiCache) | 三级缓存概念 | **Finding 7**: HiRadixTree 页表 + 中央 controller |
-| 第5章 §5.3 (场景题) | 千卡 MoE 部署 | **Finding 3**: TP+EP vs DP+EP 实测数据 |
+| 第3章 §3.2.1 (TP) | TP 切分方式 | **Finding 5**: Megatron-LM TP 通信量公式 |
+| 第3章 §3.2.3 (EP) | EP 切分方式 | **Finding 2**: Wide-EP 架构（Attention DP + Expert EP）|
+| 第3章 §3.4.3 (MLA) | MLA 压缩原理 | **Finding 1**: TP 下 8× KV Cache 重复 + DP Attention 解决方案 |
+| 第3章 §3.6 (投机解码) | Eagle/MTP 原理 | **Finding 4**: MTP 大规模衰减数据 (+60.8% → +14.2%) |
+| 第3章 §3.3.3 (Mooncake) | 概念介绍 | **Finding 6**: Mooncake 实测性能 (87-190 GB/s) |
+| 第3章 §3.3.4 (HiCache) | 三级缓存概念 | **Finding 7**: HiRadixTree 页表 + 中央 controller |
+| 第23章 §23.3 (场景题) | 千卡 MoE 部署 | **Finding 3**: TP+EP vs DP+EP 实测数据 |
 
 ---
 
-## 6.5 完整来源列表
+## 24.5 完整来源列表
 
 | # | URL | 质量 | 角度 |
 |---|-----|------|------|
@@ -296,23 +296,23 @@ Attention Layers:     Replicated across DP ranks
 
 ---
 
-## 6.6 时效性更新（2026-08）
+## 24.6 时效性更新（2026-08）
 
 > 本报告基于 2026-07-02 的资料生成。以下条目针对 2026 年 7-8 月的新进展做增量修正，不影响原 Finding 的历史结论。
 
 **1. Finding 1（MLA TP 8× 重复）的适用范围**：
 - 结论对 DeepSeek-V3/V3.1 仍成立（MLA 单 KV head 架构未变）。
-- DeepSeek-V3.2-Exp 引入 DSA 后，KV 参与计算的方式变为 top-k 选择 + 压缩块，8× 重复的表述不再完全适用；V4 采用 CSA + HCA 混合注意力，KV Cache 布局进一步变化（详见 第11章 §11.1.1）。
+- DeepSeek-V3.2-Exp 引入 DSA 后，KV 参与计算的方式变为 top-k 选择 + 压缩块，8× 重复的表述不再完全适用；V4 采用 CSA + HCA 混合注意力，KV Cache 布局进一步变化（详见 第18章 §18.1.1）。
 - 工程含义：DP Attention / Wide-EP 仍是 V3 系列生产首选；V4 需要按新版引擎（SGLang `deepseek_v4_backend` / vLLM DSpark 支持）重新评估并行度。
 
 **2. Finding 4（MTP 大规模衰减）的后续**：
-- FastMTP（arXiv:2509.18362）已进入主流引擎；SGLang 主线另有 dFlash（in-filling 投机）、vLLM 支持 DFlash + 动态投机 + Suffix Decoding（第3章 §3.7）。
+- FastMTP（arXiv:2509.18362）已进入主流引擎；SGLang 主线另有 dFlash（in-filling 投机）、vLLM 支持 DFlash + 动态投机 + Suffix Decoding（第7章 §7.7）。
 - 原结论"大规模下 MTP 收益衰减"未被推翻，但"衰减后仍有 +14.2%"这一量级在更新引擎 + 更优 draft 策略下有望改善，生产选型时应以本地 benchmark 为准。
 
 **3. 被否决声明中有两条需要重新审视**：
 - "4-bit 量化中小模型严重退化"：当时被否决；但 V3.2/V4 时代低比特 + 稀疏注意力的组合成为主流，小模型 INT4 部署质量高度依赖量化方法（AWQ/GPTQ/FP8 混合），原否决理由仍然成立，只是讨论语境已切换。
-- "HiCache 降低 TTFT 56-84%"：厂商营销数据的质疑不变；SGLang 主线新增 KV Canary（第4章 §4.10），可用于独立复现 HiCache 类缓存命中率数据。
+- "HiCache 降低 TTFT 56-84%"：厂商营销数据的质疑不变；SGLang 主线新增 KV Canary（第8章 §8.10），可用于独立复现 HiCache 类缓存命中率数据。
 
 **4. 开放问题更新**：
-- 新增研究方向：稀疏注意力（NSA/DSA）下如何与 Radix/Block Cache 协同（top-k 索引缓存、被跳过块的复用）；D-LLM（扩散式 LLM）的调度与投机解码；KV Offload/Tiering 的带宽-延迟权衡（第8章 §8.2.3）。
-- 原问题 1（AllToAll/AllReduce 联合调度）在 Wide-EP + EPLB（第4章 §4.10）落地后有了工程答案，但理论最优调度仍未闭合。
+- 新增研究方向：稀疏注意力（NSA/DSA）下如何与 Radix/Block Cache 协同（top-k 索引缓存、被跳过块的复用）；D-LLM（扩散式 LLM）的调度与投机解码；KV Offload/Tiering 的带宽-延迟权衡（第9章 §9.2.3）。
+- 原问题 1（AllToAll/AllReduce 联合调度）在 Wide-EP + EPLB（第8章 §8.10）落地后有了工程答案，但理论最优调度仍未闭合。

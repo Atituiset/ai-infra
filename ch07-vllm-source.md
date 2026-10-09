@@ -1,4 +1,4 @@
-# 第3章 vLLM 源码深度解剖
+# 第7章 vLLM 源码深度解剖
 
 > **面向角色**：需要阅读或修改 vLLM 源码的工程师  
 > **目标**：建立从 API 入口到 GPU forward 的完整代码路径认知  
@@ -6,9 +6,9 @@
 
 ---
 
-## 3.1 vLLM 架构总览
+## 7.1 vLLM 架构总览
 
-### 3.1.1 核心模块与数据流
+### 7.1.1 核心模块与数据流
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -41,7 +41,7 @@
 | Attention | `vllm/v1/attention/backends/` | FlashAttention / FlashInfer / MLA |
 | 量化 | `vllm/model_executor/layers/quantization/` | `FP8Config`, `AWQConfig` |
 
-### 3.1.2 V1 vs Legacy 引擎
+### 7.1.2 V1 vs Legacy 引擎
 
 vLLM 目前处于 V0 → V1 的迁移期。V1 引擎的核心改进：
 
@@ -58,9 +58,9 @@ vLLM 目前处于 V0 → V1 的迁移期。V1 引擎的核心改进：
 
 ---
 
-## 3.2 Scheduler：连续批处理的心脏 ★
+## 7.2 Scheduler：连续批处理的心脏 ★
 
-### 3.2.1 Scheduler 类
+### 7.2.1 Scheduler 类
 
 **文件**：`vllm/v1/core/sched/scheduler.py`  
 **类**：`class Scheduler(SchedulerInterface)`
@@ -91,7 +91,7 @@ class Scheduler:
     use_eagle: bool                     # 是否使用 Eagle
 ```
 
-### 3.2.2 关键方法
+### 7.2.2 关键方法
 
 **`schedule()` — 核心调度逻辑**：
 
@@ -125,7 +125,7 @@ schedule() → SchedulerOutput:
          finished_req_ids, block_tables, ...)
 ```
 
-### 3.2.3 Preemption 机制
+### 7.2.3 Preemption 机制
 
 当 KV Cache 不足时，Scheduler 可以**抢占**正在运行的请求：
 
@@ -139,7 +139,7 @@ Preemption 等级 (由高到低):
   - 选择优先级最低的请求进行 preemption
 ```
 
-### 3.2.4 KV Connector：PD 分离的 Scheduler 层 ★
+### 7.2.4 KV Connector：PD 分离的 Scheduler 层 ★
 
 ```python
 # scheduler.py __init__
@@ -161,9 +161,9 @@ self.connector = KVConnectorFactory.create_connector(
 
 ---
 
-## 3.3 PagedAttention / KV Cache Manager ★
+## 7.3 PagedAttention / KV Cache Manager ★
 
-### 3.3.1 KVCacheManager
+### 7.3.1 KVCacheManager
 
 **文件**：`vllm/v1/core/kv_cache_manager.py`  
 **类**：`class KVCacheManager`
@@ -203,7 +203,7 @@ class KVCacheManager:
         """获取请求的 block table（物理 block ID 列表）"""
 ```
 
-### 3.3.2 KVCacheBlock
+### 7.3.2 KVCacheBlock
 
 **文件**：`vllm/v1/core/kv_cache_utils.py`
 
@@ -215,7 +215,7 @@ class KVCacheBlock:
     is_null: bool              # 是否为 padding block
 ```
 
-### 3.3.3 Prefix Caching 实现
+### 7.3.3 Prefix Caching 实现
 
 ```
 前缀缓存的流程:
@@ -234,7 +234,7 @@ class KVCacheBlock:
     → 只需 prefill system prompt 一次！
 ```
 
-### 3.3.4 混合 KV Cache Coordinator
+### 7.3.4 混合 KV Cache Coordinator
 
 **文件**：`vllm/v1/core/kv_cache_coordinator.py`  
 **类**：`class HybridKVCacheCoordinator`
@@ -254,9 +254,9 @@ class HybridKVCacheCoordinator:
 
 ---
 
-## 3.4 Model Runner：GPU 执行引擎 ★
+## 7.4 Model Runner：GPU 执行引擎 ★
 
-### 3.4.1 GPUModelRunner
+### 7.4.1 GPUModelRunner
 
 **文件**：`vllm/v1/worker/gpu_model_runner.py`  
 **类**：`class GPUModelRunner`  
@@ -313,7 +313,7 @@ class GPUModelRunner:
         """从 logits 采样下一个 token。"""
 ```
 
-### 3.4.2 CUDA Graph 优化 ★
+### 7.4.2 CUDA Graph 优化 ★
 
 ```
 问题: 每个 decode step 都需要重新 launch 数百个 CUDA kernel
@@ -335,7 +335,7 @@ vLLM 对此的解决方案 (BreakableCUDAGraph):
 
 源码位置：`vllm/compilation/breakable_cudagraph.py` — `BreakableCUDAGraphWrapper`
 
-### 3.4.3 Attention Backend 选择 ★
+### 7.4.3 Attention Backend 选择 ★
 
 **文件**：`vllm/v1/attention/selector.py`
 
@@ -358,7 +358,7 @@ def get_attn_backend(
     """
 ```
 
-### 3.4.4 分布式支持
+### 7.4.4 分布式支持
 
 **文件**：`vllm/v1/worker/gpu_model_runner.py`（后半部分）
 
@@ -391,9 +391,9 @@ PP=2 时:
 
 ---
 
-## 3.5 投机解码实现 ★
+## 7.5 投机解码实现 ★
 
-### 3.5.1 架构概览
+### 7.5.1 架构概览
 
 **文件**：`vllm/v1/spec_decode/`
 
@@ -410,7 +410,7 @@ spec_decode/
 └── metrics.py                   # 投机解码指标
 ```
 
-### 3.5.2 Eagle Proposer 关键流程
+### 7.5.2 Eagle Proposer 关键流程
 
 ```python
 class EagleProposer(SpecDecodeProposer):
@@ -444,7 +444,7 @@ class EagleProposer(SpecDecodeProposer):
         """
 ```
 
-### 3.5.3 投机解码的 Scheduler 集成
+### 7.5.3 投机解码的 Scheduler 集成
 
 ```python
 # scheduler.py 中的关键参数
@@ -462,9 +462,9 @@ self.num_lookahead_tokens = self.num_spec_tokens            # 需要预留的 KV
 
 ---
 
-## 3.6 量化支持
+## 7.6 量化支持
 
-### 3.6.1 量化配置与加载
+### 7.6.1 量化配置与加载
 
 **文件**：`vllm/model_executor/layers/quantization/`
 
@@ -488,7 +488,7 @@ quant_config = QUANTIZATION_METHODS[quant_method].from_config(model_config)
 #   - 量化后的 layer wrapper
 ```
 
-### 3.6.2 FP8 推理流程
+### 7.6.2 FP8 推理流程
 
 ```python
 # quantization/fp8.py
@@ -514,7 +514,7 @@ class FP8Config:
 
 ---
 
-## 3.7 最新特性速览
+## 7.7 最新特性速览
 
 | 特性 | 文件位置 | 状态 |
 |------|---------|------|
@@ -538,7 +538,7 @@ class FP8Config:
 
 ---
 
-## 3.8 源码阅读路线建议
+## 7.8 源码阅读路线建议
 
 如果你想深入 vLLM 源码，推荐以下阅读顺序：
 

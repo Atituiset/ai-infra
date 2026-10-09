@@ -1,10 +1,10 @@
-# 第26章 动手实践手册（Lab Manual）
+# 第25章 动手实践手册（Lab Manual）
 
 > **面向角色**：所有读者；尤其适合攒项目作品集、以及"读完了但没摸过"的工程师  
 > **前置知识**：按各 Lab 的回指章节而定  
 > **目标**：把全书概念变成可复现的实验。每个 Lab 按「目标 → 步骤 → 你应该观察到什么 → 思考题」组织——**观察点比命令重要**：命令会过时（以各工具 `--help` 为准），但"预期看到什么现象"是稳定的
 
-## 26.0 使用约定
+## 25.0 使用约定
 
 **硬件档位标记**：
 
@@ -47,15 +47,15 @@ curl http://localhost:8000/v1/chat/completions -d '{
 ```
 
 **你应该观察到**：
-1. 启动日志里权重加载 → CUDA Graph 捕获两个阶段，后者占启动时间的相当比例（对应 第3章 §3.4.2）；
-2. SSE 输出是一串 `data:` chunk，最后一个带 `finish_reason` 和 usage（对应 第18章 §18.3.1）；
+1. 启动日志里权重加载 → CUDA Graph 捕获两个阶段，后者占启动时间的相当比例（对应 第7章 §7.4.2）；
+2. SSE 输出是一串 `data:` chunk，最后一个带 `finish_reason` 和 usage（对应 第12章 §12.3.1）；
 3. 两个引擎的显存占用都远大于权重本身——差额就是 KV pool 预分配。
 
 **思考题**：为什么两个引擎都要在服务前预分配 KV pool，而不是按需 malloc？（提示：碎片化正是 vLLM 论文要解决的起点）
 
 ### L1 压测：画出你的第一条 RPS-Latency 曲线 `[1×24G]`
 
-**目标**：亲手复现 第8章 §8.1 的方法论；理解吞吐和延迟为什么是一对矛盾。
+**目标**：亲手复现 第9章 §9.1 的方法论；理解吞吐和延迟为什么是一对矛盾。
 
 ```bash
 # 以 vLLM bench_serving 为例（SGLang 有同名工具）
@@ -76,13 +76,13 @@ python benchmarks/benchmark_serving.py \
 
 ### L2 观察 Continuous Batching 的动态 `[1×24G]`
 
-**目标**：看见调度器（第1章 §1.3.2 / 第3章 §3.2）。
+**目标**：看见调度器（第1章 §1.3.2 / 第7章 §7.2）。
 
 做法：开 DEBUG 日志或 metrics 端点，用脚本先发 1 个长输出请求，5 秒后追加 3 个短输入请求。
 
 **你应该观察到**：
 1. 新请求不等旧请求结束即进入 batch（对比静态批处理的行为）；
-2. running/pending 队列长度随时间变化；若持续加压，出现 preemption/retract 事件（第3章 §3.2.3）——记录触发时刻的 KV 占用水位；
+2. running/pending 队列长度随时间变化；若持续加压，出现 preemption/retract 事件（第7章 §7.2.3）——记录触发时刻的 KV 占用水位；
 3. metrics 里 batch size 是随时间波动的，不是一个常数。
 
 **思考题**：preemption 发生后，被抢占请求重新执行时的第一个 token 延迟由什么决定？（recompute vs swap 的选择逻辑在哪段源码里？）
@@ -108,7 +108,7 @@ python benchmarks/benchmark_serving.py \
 
 ### L4 Prefix/Radix Cache 命中率实验 `[1×24G]`
 
-**目标**：量化 第2章 §2.1.2 / 第4章 §4.2 的复用收益。
+**目标**：量化 第3章 §3.1.2 / 第8章 §8.2 的复用收益。
 
 设计两组流量：A 组共享同一 system prompt（长前缀 + 短问题）；B 组完全随机 prompt。分别压测并记录 TTFT 与缓存命中率指标（两引擎 metrics 都有暴露）。
 
@@ -118,7 +118,7 @@ python benchmarks/benchmark_serving.py \
 
 ### L5 投机解码实测：负载决定一切 `[1×24G]`
 
-**目标**：复现 第6章 Finding 4 与 §2.6.5 选型表的核心结论。
+**目标**：复现 第24章 Finding 4 与 §3.6.5 选型表的核心结论。
 
 ```bash
 # 以支持 EAGLE/MTP 的模型配置投机解码，分别在两类负载下压测:
@@ -140,7 +140,7 @@ python benchmarks/benchmark_serving.py \
 
 ### L6 量化全流程：AWQ vs GPTQ `[1×24G]`
 
-**目标**：走通 第22章 §22.2 的完整管道，拿到自己的精度-速度数据点。
+**目标**：走通 第4章 §4.2 的完整管道，拿到自己的精度-速度数据点。
 
 ```bash
 # 1. 用 llm-compressor/AutoAWQ 类工具量化同一个 7B 模型（W4A16）
@@ -158,7 +158,7 @@ python benchmarks/benchmark_serving.py \
 
 ### L7 Chunked Prefill 开关对比 `[1×24G]`
 
-**目标**：复现 Sarathi-Serve（§2.6 时间轴 / 第20章 §20.2.6）解决的问题。
+**目标**：复现 Sarathi-Serve（§3.6 时间轴 / 第20章 §20.2.6）解决的问题。
 
 设计：混合负载 = 持续的小请求流 + 周期性插入 32K 长 prompt。分别在关闭/开启 chunked prefill 下采集小请求的 TPOT p99。
 
@@ -168,14 +168,14 @@ python benchmarks/benchmark_serving.py \
 
 ### L8 迷你 PD 分离 `[2×GPU]`
 
-**目标**：在单机上搭最小 P/D 拓扑（对应 第2章 §2.3 / 第20章 §20.2.7）。
+**目标**：在单机上搭最小 P/D 拓扑（对应 第3章 §3.3 / 第20章 §20.2.7）。
 
 做法：用引擎自带的 PD 分离模式（SGLang 示例配置最直观）或两进程 + KV transfer 后端，P 进程绑卡 0、D 进程绑卡 1，中间走本机 NVLink/PCIe。压测长输入短输出负载，与合部署基线对比 TTFT 分布。
 
 **你应该观察到**：
 1. 合部署时 prefill 尖峰期间 decode 请求 TPOT 抖动；分离后 D 侧 TPOT 平稳；
 2. P:D 配比对长输入负载敏感——试着改变配比找到你这组参数下的最优；
-3. 观察 KV 传输耗时在 TTFT 中的占比（传输带宽 ÷ KV 大小可以手算核对，参考 第6章 Finding 6 的量级）。
+3. 观察 KV 传输耗时在 TTFT 中的占比（传输带宽 ÷ KV 大小可以手算核对，参考 第24章 Finding 6 的量级）。
 
 **思考题**：如果你的 KV 传输只有 PCIe 16GB/s，多大输入长度以上 PD 分离才划算？列出你的推导。
 
@@ -185,7 +185,7 @@ python benchmarks/benchmark_serving.py \
 
 ### L9 手写 Triton Kernel：RMSNorm 三部曲 `[1×24G]`
 
-**目标**：走完 第24章 §24.4 六步工作流的一次完整循环。
+**目标**：走完 第6章 §6.4 六步工作流的一次完整循环。
 
 ```text
 1. Profile: 用 PyTorch profiler 找出 eager RMSNorm 的耗时与访存量
@@ -198,11 +198,11 @@ python benchmarks/benchmark_serving.py \
 
 **你应该观察到**：好的 Triton 实现达到 eager 数倍性能、接近 torch.compile 水平；autotune 前后差距可达 2×；数值 bug 在 atol=1e-3 下现形。
 
-**思考题**：把 RMSNorm+残差+FP8-quant 三步融成一个 kernel，理论上省多少 HBM 字节？用你 L9 profile 出的实际数字算（对应 §24.5 的判据）。
+**思考题**：把 RMSNorm+残差+FP8-quant 三步融成一个 kernel，理论上省多少 HBM 字节？用你 L9 profile 出的实际数字算（对应 §6.5 的判据）。
 
 ### L10 结构化输出的代价 `[1×24G]`
 
-**目标**：测量 constrained decoding 在热路径上的开销（第18章 §18.5）。
+**目标**：测量 constrained decoding 在热路径上的开销（第12章 §12.5）。
 
 做法：同一批 prompt，分别用自由生成 / JSON Schema 约束（引擎 guided decoding 或 xgrammar 后端）/ 复杂嵌套 schema 三种模式压测，比较 TPOT 与吞吐。
 
@@ -212,7 +212,7 @@ python benchmarks/benchmark_serving.py \
 
 ### L11 写一个 Cache-Aware Router `[CPU]`
 
-**目标**：实现 第18章 §18.3.3 的最小可行版，理解路由为什么必须懂缓存。
+**目标**：实现 第12章 §12.3.3 的最小可行版，理解路由为什么必须懂缓存。
 
 做法：模拟 3 个引擎副本，各自维护一个 radix tree 近似视图（可用字典模拟）；写两种策略——纯轮询 vs session 哈希粘性；回放一批多轮对话 trace，统计各自的模拟命中率与副本负载方差。
 
@@ -222,7 +222,7 @@ python benchmarks/benchmark_serving.py \
 
 ### L12 混沌演练：会话粘性失效 `[2×GPU]`
 
-**目标**：验证 第18章 §18.9 的故障语义设计。
+**目标**：验证 第12章 §12.9 的故障语义设计。
 
 做法：在 L11/L4 的基础上，压测中 kill 掉承载活跃会话的副本，观测：(a) 该会话重路由后的首个请求 TTFT；(b) 全局命中率恢复曲线；(c) 若开启 KV 分层存储（HiCache/LMCache 配置），对比状态丢失后的表现差异。
 
@@ -232,7 +232,7 @@ python benchmarks/benchmark_serving.py \
 
 ---
 
-## 26.x 学习路径建议
+## 25.x 学习路径建议
 
 | 你的情况 | 建议 |
 |----------|------|
