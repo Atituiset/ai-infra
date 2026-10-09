@@ -10,8 +10,8 @@ title: 前言
 
 本书内容覆盖 AI Infra 推理领域从入门到源码级别的知识体系，基于：
 
-- **vLLM 本地源码**：`vllm/` 目录，V1 引擎架构
-- **SGLang 本地源码**：`sglang/` 目录，RadixAttention + Overlap 调度
+- **vLLM 源码**：[vllm-project/vllm](https://github.com/vllm-project/vllm)，V1 引擎架构
+- **SGLang 源码**：[sgl-project/sglang](https://github.com/sgl-project/sglang)，RadixAttention + Overlap 调度
 - **互联网最新资料**：论文、博客、Release Notes、社区讨论
 - **实战自测**：高频问题 + 源码定位 + 场景设计
 
@@ -96,8 +96,8 @@ title: 前言
 ## 维护
 
 - 最后更新：2026-08-24
-- 基于源码版本：vLLM V1 引擎开发主线、SGLang 最新主线、TensorRT-LLM 主线、llama.cpp 主线
-- Profile 岗位参考：`profile.md` — 训推平台及引擎研发主任工程师
+- 基于源码版本：[vLLM](https://github.com/vllm-project/vllm) V1 引擎开发主线、[SGLang](https://github.com/sgl-project/sglang)、[TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)、[llama.cpp](https://github.com/ggml-org/llama.cpp) 最新主线
+- 面向岗位：训推平台及引擎研发工程师
 
 ## 构建与部署（VitePress）
 

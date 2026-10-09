@@ -2,7 +2,7 @@
 
 > **面向角色**：需要阅读或修改 vLLM 源码的工程师  
 > **目标**：建立从 API 入口到 GPU forward 的完整代码路径认知  
-> **源码版本**：基于 AI Infra Collect 中 clone 的 vLLM 最新代码（V1 引擎架构）
+> **源码版本**：基于 [vLLM](https://github.com/vllm-project/vllm) 最新主线代码（V1 引擎架构）
 
 ---
 

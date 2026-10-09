@@ -2,7 +2,7 @@
 
 > **面向角色**：需要阅读或修改 SGLang 源码的工程师  
 > **目标**：建立从请求到 GPU forward 的 SGLang 完整数据流认知  
-> **源码版本**：基于 AI Infra Collect 中 clone 的 SGLang 最新代码
+> **源码版本**：基于 [SGLang](https://github.com/sgl-project/sglang) 最新主线代码
 
 ---
 
