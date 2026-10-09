@@ -5,9 +5,9 @@
   "type": "module",
   "description": "AI Infra 推理引擎知识全书 - 在线文档",
   "scripts": {
-    "docs:dev": "vitepress dev src",
-    "docs:build": "vitepress build src",
-    "docs:preview": "vitepress preview src"
+    "docs:dev": "vitepress dev .",
+    "docs:build": "vitepress build .",
+    "docs:preview": "vitepress preview ."
   },
   "devDependencies": {
     "vitepress": "^1.6.3",
