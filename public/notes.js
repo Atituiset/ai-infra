@@ -458,7 +458,7 @@
     var style = document.createElement('style');
     style.textContent = [
       '#cs-notes-fab{position:fixed;right:20px;bottom:20px;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;font-size:22px;background:#2e7d5b;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.3);z-index:10000;display:flex;align-items:center;justify-content:center;}',
-      '#cs-notes-fab:hover{background:#1d4ed8;}',
+      '#cs-notes-fab:hover{background:#37996f;}',
       '#cs-notes-panel{position:fixed;right:20px;bottom:84px;width:min(400px,calc(100vw - 40px));max-height:72vh;background:#fff;color:#1f2937;border:1px solid #d1d5db;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.25);z-index:10001;display:none;flex-direction:column;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;font-size:13px;line-height:1.5;}',
       '#cs-notes-panel.open{display:flex;}',
       '#cs-notes-panel .cn-head{padding:10px 12px;background:#f3f4f6;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:8px;}',
@@ -486,7 +486,7 @@
       '.cs-note-mark:hover{background:rgba(250,204,21,.55);}',
       '#cs-notes-selbar{position:fixed;z-index:10003;display:none;align-items:center;gap:6px;background:#111827;color:#fff;border-radius:8px;padding:4px 6px;box-shadow:0 4px 14px rgba(0,0,0,.4);font-size:12px;}',
       '#cs-notes-selbar button{background:#2e7d5b;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;}',
-      '#cs-notes-selbar button:hover{background:#1d4ed8;}',
+      '#cs-notes-selbar button:hover{background:#37996f;}',
       '#cs-notes-pop{position:fixed;left:50%;top:22%;transform:translateX(-50%);width:min(500px,calc(100vw - 32px));background:#fff;color:#1f2937;border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.35);z-index:10004;display:none;flex-direction:column;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;font-size:13px;line-height:1.5;}',
       '#cs-notes-pop.open{display:flex;}',
       '#cs-notes-pop .cn-pop-head{padding:10px 12px;background:#f3f4f6;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:8px;}',
@@ -497,7 +497,28 @@
       '#cs-notes-pop .cn-pop-ops{display:flex;justify-content:flex-end;gap:8px;padding:10px 12px 12px;}',
       '#cs-notes-pop .cn-pop-ops button{border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px;}',
       '#cs-notes-pop .cn-pop-ops button.cn-save{background:#2e7d5b;color:#fff;border-color:#2e7d5b;}',
-      '#cs-notes-pop .cn-pop-ops button.cn-save:hover{background:#1d4ed8;}'
+      '#cs-notes-pop .cn-pop-ops button.cn-save:hover{background:#37996f;}',
+      'html.dark #cs-notes-panel{background:#222429;color:#eeeef0;border-color:#383b43;}',
+      'html.dark #cs-notes-panel .cn-head{background:#1e2024;border-bottom-color:#383b43;}',
+      'html.dark #cs-notes-panel .cn-head b{color:#eeeef0;}',
+      'html.dark #cs-notes-panel .cn-head span{color:#aaadb6;}',
+      'html.dark #cs-notes-panel .cn-export{background:#26282e;color:#c8cdd5;border-color:#383b43;}',
+      'html.dark #cs-notes-panel .cn-export:hover{background:#304363;}',
+      'html.dark #cs-notes-panel .cn-tabs{border-bottom-color:#383b43;}',
+      'html.dark #cs-notes-panel .cn-tab{color:#aaadb6;}',
+      'html.dark #cs-notes-panel .cn-tab.active{color:#aac7ff;border-bottom-color:#aac7ff;}',
+      'html.dark #cs-notes-panel .cn-item{border-color:#383b43;background:#1e2024;}',
+      'html.dark #cs-notes-panel .cn-item .cn-text{color:#eeeef0;}',
+      'html.dark #cs-notes-panel .cn-item .cn-ops button{border-color:#383b43;background:#26282e;color:#c8cdd5;}',
+      'html.dark #cs-notes-panel .cn-item .cn-ops button:hover{background:#304363;}',
+      'html.dark #cs-notes-panel .cn-hint{border-top-color:#383b43;background:#1e2024;color:#aaadb6;}',
+      'html.dark #cs-notes-panel .cn-page{color:#c8cdd5;}',
+      'html.dark #cs-notes-pop{background:#222429;color:#eeeef0;}',
+      'html.dark #cs-notes-pop .cn-pop-head{background:#1e2024;border-bottom-color:#383b43;}',
+      'html.dark #cs-notes-pop .cn-pop-head b{color:#eeeef0;}',
+      'html.dark #cs-notes-pop textarea{border-color:#383b43;color:#eeeef0;background:#1e2024;}',
+      'html.dark #cs-notes-pop .cn-pop-ops button{border-color:#383b43;background:#26282e;color:#c8cdd5;}',
+      'html.dark #cs-notes-pop .cn-pop-ops button:hover{background:#304363;}'
     ].join('\n');
     document.head.appendChild(style);
 

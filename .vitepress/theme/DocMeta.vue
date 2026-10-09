@@ -71,7 +71,7 @@ watch(
 }
 .doc-meta-chip {
   background: var(--vp-c-brand-1);
-  color: #fff;
+  color: var(--vp-c-bg);
   font-family: var(--vp-font-family-mono);
   font-size: 12.5px;
   font-weight: 600;
