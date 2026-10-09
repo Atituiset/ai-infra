@@ -240,7 +240,7 @@
 .VPNavBarTitle .title {
   font-family: var(--vp-font-family-base);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9rem;
   letter-spacing: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -251,7 +251,7 @@
 @media (max-width: 768px) {
   .VPNavBar .title,
   .VPNavBarTitle .title {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
 }
 
