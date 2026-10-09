@@ -15,6 +15,7 @@ export default defineConfig({
   base,
   lastUpdated: true,
   cleanUrls: true,
+  srcExclude: ['README.md'],
 
   markdown: {
     // shiki 3.x 不再内置 cuda 语法, 用 cpp 高亮兜底
