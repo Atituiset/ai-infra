@@ -108,7 +108,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 | **水平融合** | 同形小算子合并成批 | 多请求 GEMV 合并、MoE grouped GEMM（cutlass grouped gemm） | 提升算术强度、减少 launch |
 | **跨算子重构** | 改算法消掉整类访存 | FlashAttention（online softmax）、fused decode attention | IO-aware 范式 |
 
-案例拆解（面试可画）：
+案例拆解（可白板推演）：
 1. **RMSNorm+残差+量化融合**：三次读写变一次，memory-bound 算子吞吐 ~×3；
 2. **MoE grouped GEMM**：token→expert 的 scatter 后，每个 expert 的稠密小 GEMM 合并为单 kernel 的分组执行，消除大量小 kernel 启动；
 3. **FlashAttention 即终极融合**：把 softmax 这个"需要全行归一化"的算子改写成流式两遍，使 attention 整体可以分块融合——它不是"融合了已有算子"，而是证明了融合的最高形态是**改数学**。
@@ -139,7 +139,7 @@ Tensor(Schedule) 层：tiling / 流水 / 向量化 / 内存提升(shared/registe
 - 算子开发六步法，Roofline 先行，数值验证与 Graph 兼容是交付门槛；
 - 融合收益 = 省掉的 HBM 字节；融合的最高境界是重写数学。
 
-### 面试高频问题
+### 高频问题
 
 1. 为什么 vLLM 不做整图编译而用 piecewise？（动态 shape + attention 专用库已最优）
 2. Triton 和 CUDA 怎么选？什么场景必须下 CUDA？

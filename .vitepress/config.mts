@@ -113,10 +113,10 @@ export default defineConfig({
         ],
       },
       {
-        text: 'VII 成长：面试与实践',
+        text: 'VII 成长：自测与实践',
         collapsed: false,
         items: [
-          { text: '第5章 面试实战与自检清单', link: '/ch05-interview' },
+          { text: '第5章 实战自测与自检清单', link: '/ch05-selfcheck' },
           { text: '第6章 Deep Research 研究报告', link: '/ch06-research-report' },
           { text: '第26章 动手实践手册（Lab Manual）', link: '/ch26-practice' },
         ],

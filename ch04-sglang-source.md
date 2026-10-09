@@ -1,6 +1,6 @@
 # 第4章 SGLang 源码深度解剖
 
-> **面向角色**：需要阅读或修改 SGLang 源码的工程师、高级面试候选人  
+> **面向角色**：需要阅读或修改 SGLang 源码的工程师  
 > **目标**：建立从请求到 GPU forward 的 SGLang 完整数据流认知  
 > **源码版本**：基于 AI Infra Collect 中 clone 的 SGLang 最新代码
 
@@ -586,6 +586,6 @@ TokenToKVPool (KVCache):
 | **远端模型权重 Connector** | `sglang/srt/connector/` | 从 S3 / Redis / Azure 等远端加载权重（`weight_iterator` 抽象），便于集群化部署 |
 | **可观测性** | `sglang/srt/observability/` | OpenTelemetry 等可观测性接入 |
 
-**跟踪建议**：这些特性大多随模型架构演进（V3.2/V4、扩散 LLM）而来，面试或方案设计时可将其作为"了解当前主线"的加分项；核心的调度 / RadixAttention / Overlap / PD 分离仍以正文各节为准。
+**跟踪建议**：这些特性大多随模型架构演进（V3.2/V4、扩散 LLM）而来，技术讨论或方案设计时可将其作为"了解当前主线"的加分项；核心的调度 / RadixAttention / Overlap / PD 分离仍以正文各节为准。
   14. sgl-kernel/                             ← C++/CUDA 自定义 kernel
 ```

@@ -34,7 +34,7 @@ vLLM/SGLang 解决的是**单副本内**的问题：一个引擎进程如何高�
 └───────────────────────────────────────────────────────────┘
 ```
 
-**行业判断（2025-2026）**：随着 vLLM 与 SGLang 在能力上快速趋同（互相移植对方的核心特性），**单机引擎正在商品化，差异化竞争上移到网关与编排层**——llm-d（Red Hat/Google 等发起）、NVIDIA Dynamo 都押注这一层。理解本章的内容，是 2026 年之后 AI Infra 岗位面试的区分项。
+**行业判断（2025-2026）**：随着 vLLM 与 SGLang 在能力上快速趋同（互相移植对方的核心特性），**单机引擎正在商品化，差异化竞争上移到网关与编排层**——llm-d（Red Hat/Google 等发起）、NVIDIA Dynamo 都押注这一层。理解本章的内容，是 2026 年之后 AI Infra 岗位能力的区分项。
 
 ---
 
@@ -137,7 +137,7 @@ cache-aware：会话 A 第 5 轮 → 副本 1（radix tree 命中前 30k token�
 | **NVIDIA Dynamo** | KV-aware routing + PD 编排，把 vLLM/TRT-LLM/SGLang 当作可插拔 backend |
 | **llm-d + Gateway API Inference Extension** | 把 EPP（Endpoint Picker，基于 prefix hash 精确匹配）标准化进 K8s Gateway API，社区路线 |
 
-**面试叙事**：负载均衡的目标函数从「均衡连接」→「均衡 QPS」→「最大化 goodput」的三级跳，本质是因为 LLM 服务中**请求之间不再独立**（prefix cache 使历史状态有价值），这是与传统微服务最本质的区别。
+**技术叙事**：负载均衡的目标函数从「均衡连接」→「均衡 QPS」→「最大化 goodput」的三级跳，本质是因为 LLM 服务中**请求之间不再独立**（prefix cache 使历史状态有价值），这是与传统微服务最本质的区别。
 
 ### 18.3.4 多模型服务形态
 
@@ -313,7 +313,7 @@ XID 错误速查（完整表见 NVIDIA 文档，DCGM 自动采集）：
 | 容错 | XID 分类 / 粘性失效 / 混沌 | 故障是常态，设计故障半径 |
 | 硅片 | Groq/Cerebras/Tenstorrent | 用 HBM 换确定性的另一条路线 |
 
-### 面试高频问题
+### 高频问题
 
 1. Device plugin 和 DRA 的本质区别？（计数器分配 vs 拓扑感知声明式分配）
 2. 为什么 L7 负载均衡对 LLM 不适用？怎么改？（prefix cache 使请求相关 → session affinity + cache-aware + goodput 目标）

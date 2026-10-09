@@ -35,7 +35,7 @@ features:
   - title: VI 生态与前沿
     details: 引擎生态对比、模型部署案例、Agentic/RL 负载、编年史与论文地图、多模态服务。
     link: /ch10-engine-ecosystem
-  - title: VII 成长：面试与实践
-    details: 面试实战自检清单、Deep Research 报告、12 个可验收动手 Lab。
-    link: /ch05-interview
+  - title: VII 成长：自测与实践
+    details: 实战自测与自检清单、Deep Research 报告、12 个可验收动手 Lab。
+    link: /ch05-selfcheck
 ---

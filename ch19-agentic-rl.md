@@ -196,7 +196,7 @@ SGLang 对应 API：`update_weights_from_tensor`（进程内/IPC）、`update_we
 | API 面 | generate | + 权重热更新 / 会话暂停恢复 / n-way 采样 |
 | 邻居系统 | 无 | RL trainer 共享资源池 |
 
-### 面试高频问题
+### 高频问题
 
 1. Reasoning 模型为什么让 decode-bound 问题更严重？引擎层面如何应对？
 2. Agent 多轮会话下，TTFT 的第一影响因素是什么？（上一轮 KV 是否还在原副本）

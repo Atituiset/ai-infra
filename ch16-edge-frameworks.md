@@ -904,7 +904,7 @@ interpreter = tf.lite.Interpreter(
 
 ---
 
-## 16.7 小结与面试高频考点
+## 16.7 小结与高频考点
 
 ### 16.7.1 关键结论
 
@@ -914,7 +914,7 @@ interpreter = tf.lite.Interpreter(
 - **MNN 在阿里/平头哥生态中有独特价值**，Converter / Interpreter / Backend 三层架构与 RISC-V/NPU 后端值得关注。
 - **框架选型必须先定硬件**，再考虑量化、算子支持、工具链成熟度，最后才是延迟/吞吐优化。
 
-### 16.7.2 面试高频考点 ★
+### 16.7.2 高频考点 ★
 
 1. **TensorRT-LLM 的 build 流程是什么？**  
    答：`commands/build.py` 解析参数 → `builder.py` 创建 `Network` 和 `BuilderConfig` → 调用 `Builder.build_engine` 生成序列化 engine → `Executor` 加载运行。

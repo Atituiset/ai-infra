@@ -2,7 +2,7 @@
 
 > **面向角色**：需要理解推理性能瓶颈的工程师  
 > **目标**：补齐 AI Infra 工程师必须掌握的 GPU 硬件与 CUDA 基础  
-> **标星**：★ = 面试常问，必须掌握
+> **标星**：★ = 高频常考，必须掌握
 
 ---
 
@@ -87,7 +87,7 @@ CUDA Thread Hierarchy:
 
 ### 7.2.2 重要 CUDA 概念
 
-| 概念 | 含义 | 面试关联 |
+| 概念 | 含义 | 考点关联 |
 |------|------|---------|
 | **Warp** | 32 个 thread 一组，SIMT 执行 | warp divergence 会降低效率 |
 | **Coalesced Memory Access** | 相邻 thread 访问相邻内存地址 | 合并访问可最大化 HBM 带宽 |
@@ -167,7 +167,7 @@ __global__ void add(float* a, float* b, float* c, int n) {
 
 ---
 
-## 7.4 面试常见 GPU/CUDA 题
+## 7.4 GPU/CUDA 高频自测题
 
 **Q: 为什么 LLM decode 阶段 GPU 算力利用率很低？**
 - 答：decode 是 memory-bound。每次 forward 读取全部权重，HBM 带宽成为瓶颈，算力等待数据。

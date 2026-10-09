@@ -228,7 +228,7 @@ EngineCoreRequest(..., cache_salt="tenant_123")
 
 ---
 
-## 14.7 面试常见问题
+## 14.7 高频问题
 
 **Q: 如何防止 LLM 推理服务被 prompt injection 攻击？**
 - 答：输入过滤、系统提示隔离、最小权限工具调用、输出审计、沙箱化执行。

@@ -206,7 +206,7 @@ export VLLM_ROCM_USE_FP8_FLASH_ATTN=1
 
 ---
 
-## 12.6 面试常见问题
+## 12.6 高频问题
 
 **Q: 国产 GPU 上部署 LLM 的最大挑战是什么？**
 - 答：算子生态和通信后端。NVIDIA CUDA 有最成熟的 custom kernel 生态，国产 GPU 需要逐个验证/迁移算子，且集合通信（AllReduce/AllToAll）的稳定性需要长期打磨。
